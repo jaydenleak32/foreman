@@ -188,7 +188,7 @@ function formatTimeMinutes(decimalHour) {
   return h12 + ':' + (m < 10 ? '0' : '') + m + ' ' + ampm;
 }
 
-// === PMG-style Block Modal with Scroll Wheels ===
+// === PMG-style Block Modal with Clock Face Picker ===
 function showPMGBlockModal(dateStr, startHour, block) {
   const isEdit = !!block;
   const modal = document.getElementById('settings-modal');
@@ -199,11 +199,18 @@ function showPMGBlockModal(dateStr, startHour, block) {
   const endH = isEdit ? block.endHour : Math.min(startHour + 1, SCHEDULE_END);
   const cat = isEdit && block.category ? block.category : 'Appointment';
 
-  // Convert decimal hours to h/m
   const startHr = Math.floor(startH);
   const startMin = Math.round((startH - startHr) * 60);
   const endHr = Math.floor(endH);
   const endMin = Math.round((endH - endHr) * 60);
+
+  // State for clock pickers
+  const timeState = {
+    start: { h: to12h(startHr).h, m: snapMin(startMin), ampm: to12h(startHr).ampm },
+    end: { h: to12h(endHr).h, m: snapMin(endMin), ampm: to12h(endHr).ampm },
+  };
+  let activePicker = 'start'; // 'start' or 'end'
+  let clockMode = 'hour'; // 'hour' or 'minute'
 
   body.innerHTML = `
     <div class="form-group">
@@ -221,35 +228,16 @@ function showPMGBlockModal(dateStr, startHour, block) {
       </div>
     </div>
 
-    <div class="time-picker-section">
-      <div class="time-picker-group">
-        <label>Start</label>
-        <div class="time-wheels">
-          <div class="wheel-container">
-            <div class="wheel" id="start-hour-wheel" data-field="startHour"></div>
-          </div>
-          <span class="wheel-colon">:</span>
-          <div class="wheel-container">
-            <div class="wheel" id="start-min-wheel" data-field="startMin"></div>
-          </div>
-          <div class="wheel-container wheel-ampm">
-            <div class="wheel" id="start-ampm-wheel" data-field="startAmpm"></div>
-          </div>
-        </div>
+    <div class="clock-picker-section">
+      <div class="clock-picker-tabs">
+        <button class="clock-tab active" data-picker="start">Start</button>
+        <button class="clock-tab" data-picker="end">End</button>
       </div>
-      <div class="time-picker-group">
-        <label>End</label>
-        <div class="time-wheels">
-          <div class="wheel-container">
-            <div class="wheel" id="end-hour-wheel" data-field="endHour"></div>
-          </div>
-          <span class="wheel-colon">:</span>
-          <div class="wheel-container">
-            <div class="wheel" id="end-min-wheel" data-field="endMin"></div>
-          </div>
-          <div class="wheel-container wheel-ampm">
-            <div class="wheel" id="end-ampm-wheel" data-field="endAmpm"></div>
-          </div>
+      <div class="clock-display" id="clock-display"></div>
+      <div class="clock-face-wrap">
+        <div class="clock-face" id="clock-face">
+          <div class="clock-center-dot"></div>
+          <div class="clock-hand" id="clock-hand"></div>
         </div>
       </div>
     </div>
@@ -268,27 +256,148 @@ function showPMGBlockModal(dateStr, startHour, block) {
     ${isEdit ? '<button class="btn-primary btn-danger" id="blk-delete">Delete</button>' : ''}
   `;
 
-  // Initialize wheels
-  const hours12 = Array.from({length: 12}, (_, i) => i + 1);
-  const minutes = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55];
-  const ampms = ['AM', 'PM'];
-
-  function to12(h24) {
-    const ampm = h24 >= 12 ? 'PM' : 'AM';
-    let h12 = h24 % 12;
-    if (h12 === 0) h12 = 12;
-    return { h: h12, ampm };
+  function renderClockDisplay() {
+    const t = timeState[activePicker];
+    const hStr = String(t.h);
+    const mStr = (t.m < 10 ? '0' : '') + t.m;
+    document.getElementById('clock-display').innerHTML = `
+      <span class="clock-display-part ${clockMode === 'hour' ? 'active' : ''}" id="cd-hour">${hStr}</span>
+      <span class="clock-display-colon">:</span>
+      <span class="clock-display-part ${clockMode === 'minute' ? 'active' : ''}" id="cd-min">${mStr}</span>
+      <div class="clock-ampm">
+        <button class="${t.ampm === 'AM' ? 'active' : ''}" data-ampm="AM">AM</button>
+        <button class="${t.ampm === 'PM' ? 'active' : ''}" data-ampm="PM">PM</button>
+      </div>
+    `;
+    // Tap hour/min to switch mode
+    document.getElementById('cd-hour').addEventListener('click', () => { clockMode = 'hour'; renderClock(); });
+    document.getElementById('cd-min').addEventListener('click', () => { clockMode = 'minute'; renderClock(); });
+    // AM/PM
+    document.querySelectorAll('#clock-display [data-ampm]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        timeState[activePicker].ampm = btn.dataset.ampm;
+        renderClock();
+      });
+    });
   }
 
-  const s12 = to12(startHr);
-  const e12 = to12(endHr);
+  function renderClock() {
+    renderClockDisplay();
+    const face = document.getElementById('clock-face');
+    const hand = document.getElementById('clock-hand');
+    const t = timeState[activePicker];
+    const radius = 82;
+    const cx = 110, cy = 110;
 
-  setupWheel('start-hour-wheel', hours12, s12.h, v => v);
-  setupWheel('start-min-wheel', minutes, closestMin(startMin, minutes), v => (v < 10 ? '0' : '') + v);
-  setupWheel('start-ampm-wheel', ampms, s12.ampm, v => v);
-  setupWheel('end-hour-wheel', hours12, e12.h, v => v);
-  setupWheel('end-min-wheel', minutes, closestMin(endMin, minutes), v => (v < 10 ? '0' : '') + v);
-  setupWheel('end-ampm-wheel', ampms, e12.ampm, v => v);
+    // Remove old numbers
+    face.querySelectorAll('.clock-number').forEach(n => n.remove());
+
+    if (clockMode === 'hour') {
+      for (let i = 1; i <= 12; i++) {
+        const angle = (i * 30 - 90) * Math.PI / 180;
+        const x = cx + radius * Math.cos(angle) - 16;
+        const y = cy + radius * Math.sin(angle) - 16;
+        const num = document.createElement('div');
+        num.className = 'clock-number' + (i === t.h ? ' selected' : '');
+        num.textContent = i;
+        num.style.left = x + 'px';
+        num.style.top = y + 'px';
+        num.dataset.value = i;
+        face.appendChild(num);
+      }
+      const handAngle = t.h * 30 - 90;
+      hand.style.height = (radius - 16) + 'px';
+      hand.style.transform = `translateX(-1px) rotate(${handAngle + 90}deg)`;
+    } else {
+      for (let i = 0; i < 12; i++) {
+        const m = i * 5;
+        const angle = (i * 30 - 90) * Math.PI / 180;
+        const x = cx + radius * Math.cos(angle) - 16;
+        const y = cy + radius * Math.sin(angle) - 16;
+        const num = document.createElement('div');
+        num.className = 'clock-number' + (m === t.m ? ' selected' : '');
+        num.textContent = (m < 10 ? '0' : '') + m;
+        num.style.left = x + 'px';
+        num.style.top = y + 'px';
+        num.dataset.value = m;
+        face.appendChild(num);
+      }
+      const handAngle = (t.m / 5) * 30 - 90;
+      hand.style.height = (radius - 16) + 'px';
+      hand.style.transform = `translateX(-1px) rotate(${handAngle + 90}deg)`;
+    }
+
+    // Tap numbers
+    face.querySelectorAll('.clock-number').forEach(num => {
+      num.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const val = parseInt(num.dataset.value);
+        if (clockMode === 'hour') {
+          timeState[activePicker].h = val;
+          clockMode = 'minute';
+        } else {
+          timeState[activePicker].m = val;
+        }
+        renderClock();
+      });
+    });
+
+    // Drag on clock face
+    setupClockDrag(face, hand, t, cx, cy, radius);
+  }
+
+  function setupClockDrag(face, hand, t, cx, cy, radius) {
+    let dragging = false;
+
+    function getAngleFromEvent(e) {
+      const rect = face.getBoundingClientRect();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      const dx = clientX - rect.left - cx;
+      const dy = clientY - rect.top - cy;
+      let angle = Math.atan2(dy, dx) * 180 / Math.PI + 90;
+      if (angle < 0) angle += 360;
+      return angle;
+    }
+
+    function setValue(angle) {
+      if (clockMode === 'hour') {
+        let h = Math.round(angle / 30);
+        if (h === 0) h = 12;
+        if (h > 12) h = 12;
+        timeState[activePicker].h = h;
+      } else {
+        let m = Math.round(angle / 6);
+        if (m >= 60) m = 0;
+        m = Math.round(m / 5) * 5;
+        if (m >= 60) m = 0;
+        timeState[activePicker].m = m;
+      }
+      renderClock();
+    }
+
+    face.onpointerdown = (e) => { dragging = true; face.setPointerCapture(e.pointerId); setValue(getAngleFromEvent(e)); };
+    face.onpointermove = (e) => { if (dragging) setValue(getAngleFromEvent(e)); };
+    face.onpointerup = (e) => {
+      if (dragging) {
+        dragging = false;
+        if (clockMode === 'hour') {
+          clockMode = 'minute';
+          renderClock();
+        }
+      }
+    };
+  }
+
+  // Start/End tabs
+  body.querySelectorAll('.clock-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      activePicker = tab.dataset.picker;
+      clockMode = 'hour';
+      body.querySelectorAll('.clock-tab').forEach(t => t.classList.toggle('active', t.dataset.picker === activePicker));
+      renderClock();
+    });
+  });
 
   // Category chips
   let selectedCat = cat;
@@ -300,21 +409,17 @@ function showPMGBlockModal(dateStr, startHour, block) {
   });
 
   modal.classList.remove('hidden');
+  renderClock();
 
   // Save
   document.getElementById('blk-save').addEventListener('click', async () => {
     const title = document.getElementById('blk-title').value.trim();
     if (!title) { document.getElementById('blk-title').focus(); return; }
 
-    const sH = getWheelValue('start-hour-wheel');
-    const sM = getWheelValue('start-min-wheel');
-    const sA = getWheelValue('start-ampm-wheel');
-    const eH = getWheelValue('end-hour-wheel');
-    const eM = getWheelValue('end-min-wheel');
-    const eA = getWheelValue('end-ampm-wheel');
-
-    const start24 = to24(sH, sA) + sM / 60;
-    const end24 = to24(eH, eA) + eM / 60;
+    const s = timeState.start;
+    const e = timeState.end;
+    const start24 = to24h(s.h, s.ampm) + s.m / 60;
+    const end24 = to24h(e.h, e.ampm) + e.m / 60;
 
     const data = {
       date: dateStr,
@@ -337,7 +442,6 @@ function showPMGBlockModal(dateStr, startHour, block) {
     else renderSchedule();
   });
 
-  // Delete
   if (isEdit) {
     document.getElementById('blk-delete').addEventListener('click', async () => {
       if (settings.confirmBeforeDelete && !confirm('Delete this block?')) return;
@@ -349,61 +453,18 @@ function showPMGBlockModal(dateStr, startHour, block) {
   }
 }
 
-function to24(h12, ampm) {
+function to12h(h24) {
+  const ampm = h24 >= 12 ? 'PM' : 'AM';
+  let h = h24 % 12;
+  if (h === 0) h = 12;
+  return { h, ampm };
+}
+
+function to24h(h12, ampm) {
   if (ampm === 'AM') return h12 === 12 ? 0 : h12;
   return h12 === 12 ? 12 : h12 + 12;
 }
 
-function closestMin(m, options) {
-  return options.reduce((prev, curr) => Math.abs(curr - m) < Math.abs(prev - m) ? curr : prev);
-}
-
-// === Scroll Wheel Component ===
-function setupWheel(id, values, initial, formatter) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  const itemH = 40;
-  const visibleItems = 3;
-
-  // Build items with padding
-  const padded = ['', '', ...values, '', ''];
-  el.innerHTML = padded.map((v, i) => {
-    const isReal = i >= 2 && i < values.length + 2;
-    return `<div class="wheel-item ${isReal ? '' : 'wheel-pad'}" data-value="${v}" data-index="${i}">${isReal ? formatter(v) : ''}</div>`;
-  }).join('');
-  el.style.height = (visibleItems * itemH) + 'px';
-
-  // Set initial scroll
-  const initialIdx = values.indexOf(initial);
-  el.scrollTop = initialIdx * itemH;
-  el._values = values;
-  el._formatter = formatter;
-
-  // Snap on scroll end
-  let scrollTimer;
-  el.addEventListener('scroll', () => {
-    clearTimeout(scrollTimer);
-    scrollTimer = setTimeout(() => {
-      const idx = Math.round(el.scrollTop / itemH);
-      el.scrollTo({ top: idx * itemH, behavior: 'smooth' });
-      updateWheelHighlight(el, idx, itemH);
-    }, 80);
-  }, { passive: true });
-
-  updateWheelHighlight(el, initialIdx, itemH);
-}
-
-function updateWheelHighlight(el, activeIdx, itemH) {
-  el.querySelectorAll('.wheel-item').forEach((item, i) => {
-    const realIdx = i - 2;
-    item.classList.toggle('wheel-active', realIdx === activeIdx);
-  });
-}
-
-function getWheelValue(id) {
-  const el = document.getElementById(id);
-  if (!el) return 0;
-  const itemH = 40;
-  const idx = Math.round(el.scrollTop / itemH);
-  return el._values[Math.max(0, Math.min(idx, el._values.length - 1))];
+function snapMin(m) {
+  return Math.round(m / 5) * 5 % 60;
 }

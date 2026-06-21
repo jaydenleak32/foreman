@@ -984,95 +984,152 @@ input[type="date"] {
 
 .pmg-fab:active { transform: scale(0.9); }
 
-/* Time Picker Wheels */
-.time-picker-section {
-  display: flex;
-  gap: 16px;
+/* Circular Clock Picker */
+.clock-picker-section {
   margin-bottom: 16px;
 }
 
-.time-picker-group {
-  flex: 1;
+.clock-picker-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 12px;
 }
 
-.time-picker-group label {
-  display: block;
+.clock-tab {
+  padding: 6px 16px;
+  border-radius: 16px;
   font-size: 0.8rem;
-  color: var(--text-secondary);
-  margin-bottom: 6px;
+  background: var(--bg-hover);
+  transition: all 0.15s;
+}
+
+.clock-tab.active {
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+
+.clock-display {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.clock-display-part {
+  font-size: 2rem;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s;
+  min-width: 52px;
   text-align: center;
 }
 
-.time-wheels {
+.clock-display-part.active {
+  background: var(--accent);
+  color: #fff;
+}
+
+.clock-display-colon {
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.clock-ampm {
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
   gap: 2px;
+  margin-left: 8px;
+}
+
+.clock-ampm button {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.15s;
+  color: var(--text-muted);
+}
+
+.clock-ampm button.active {
+  background: var(--accent);
+  color: #fff;
+}
+
+.clock-face-wrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.clock-face {
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
   background: var(--bg-input);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 4px;
   position: relative;
-}
-
-.time-wheels::before {
-  content: '';
-  position: absolute;
-  left: 4px;
-  right: 4px;
-  top: 50%;
-  transform: translateY(-50%);
-  height: 38px;
-  background: var(--accent-bg);
-  border-radius: 6px;
-  pointer-events: none;
-  z-index: 0;
-}
-
-.wheel-container {
-  width: 36px;
-  position: relative;
-  z-index: 1;
-}
-
-.wheel-container.wheel-ampm { width: 32px; }
-
-.wheel {
-  height: 120px;
-  overflow-y: scroll;
-  scroll-snap-type: y mandatory;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-}
-
-.wheel::-webkit-scrollbar { display: none; }
-
-.wheel-item {
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.9rem;
-  color: var(--text-muted);
-  scroll-snap-align: center;
-  transition: color 0.15s, font-weight 0.15s;
+  touch-action: none;
   user-select: none;
 }
 
-.wheel-item.wheel-pad {
-  color: transparent;
+.clock-number {
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.15s;
+  z-index: 2;
 }
 
-.wheel-item.wheel-active {
-  color: var(--text);
+.clock-number.selected {
+  background: var(--accent);
+  color: #fff;
   font-weight: 700;
 }
 
-.wheel-colon {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: var(--text);
+.clock-hand {
+  position: absolute;
+  bottom: 50%;
+  left: 50%;
+  width: 2px;
+  background: var(--accent);
+  transform-origin: bottom center;
   z-index: 1;
+  pointer-events: none;
+}
+
+.clock-hand::after {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: -5px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.clock-center-dot {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  transform: translate(-50%, -50%);
+  z-index: 3;
 }
 
 /* Category chips */

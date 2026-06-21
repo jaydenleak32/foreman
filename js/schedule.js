@@ -60,6 +60,11 @@ async function renderSchedule() {
     ? (currentHour - SCHEDULE_START) * HOUR_HEIGHT : -1;
   const totalHeight = (SCHEDULE_END - SCHEDULE_START) * HOUR_HEIGHT;
 
+  // Use flex layout: fixed header + scrollable body
+  tabContent.style.display = 'flex';
+  tabContent.style.flexDirection = 'column';
+  tabContent.style.overflow = 'hidden';
+
   tabContent.innerHTML = `
     <div class="sched-sticky-header">
       ${buildCalendarHeader()}
@@ -69,15 +74,15 @@ async function renderSchedule() {
         <button class="btn-text" id="sched-routines-btn">⚙ Routines</button>
       </div>
     </div>
-    <div class="fade-in">
+    <div class="sched-scroll-body" id="sched-scroll-body">
       ${allDayBlocks.length ? `
-        <div class="all-day-section">
+        <div class="all-day-section" style="padding:0 16px;">
           <div class="all-day-label">ALL DAY</div>
           ${allDayBlocks.map(b => `<div class="allday-chip" data-delete-block="${b.id}">${escapeHtml(b.title)} ✕</div>`).join('')}
         </div>
       ` : ''}
 
-      <div class="sched-swipe-container" id="sched-swipe">
+      <div class="sched-swipe-container" id="sched-swipe" style="padding:0 16px;">
         <div class="pmg-timeline" id="pmg-timeline" style="height:${totalHeight}px;">
           ${buildHourLines()}
           ${buildRoutineBlocks(activeRoutines, skips, selectedKey)}
@@ -105,12 +110,10 @@ async function renderSchedule() {
 
   // Scroll to current time or 8 AM
   requestAnimationFrame(() => {
-    const timeline = document.getElementById('pmg-timeline');
-    if (timeline) {
-      const headerHeight = document.querySelector('.sched-sticky-header')?.offsetHeight || 0;
-      const timelineTop = timeline.offsetTop;
+    const scrollBody = document.getElementById('sched-scroll-body');
+    if (scrollBody) {
       const offset = timeIndicatorTop >= 0 ? timeIndicatorTop - 80 : (8 - SCHEDULE_START) * HOUR_HEIGHT;
-      tabContent.scrollTop = timelineTop + offset - headerHeight;
+      scrollBody.scrollTop = offset;
     }
   });
 }
@@ -307,10 +310,10 @@ function setupScheduleEvents(selectedKey, timedBlocks, routines, skips, currentH
 
 // === Day Swipe ===
 function setupDaySwipe() {
-  const container = document.getElementById('sched-swipe');
+  const container = document.getElementById('sched-scroll-body');
   if (!container) return;
   let startX = 0, dx = 0, swiping = false;
-  const timeline = container.querySelector('.pmg-timeline');
+  const timeline = document.getElementById('pmg-timeline');
 
   container.addEventListener('touchstart', (e) => {
     startX = e.touches[0].clientX;

@@ -200,6 +200,13 @@ async function switchTab(tab) {
   const fab = document.getElementById('sched-fab');
   if (fab && tab !== 'schedule') fab.classList.add('hidden');
 
+  // Reset schedule flex layout when leaving schedule tab
+  if (tab !== 'schedule') {
+    tabContent.style.display = '';
+    tabContent.style.flexDirection = '';
+    tabContent.style.overflow = '';
+  }
+
   // Fade out current content
   tabContent.style.opacity = '0';
   tabContent.style.transform = 'translateY(6px)';

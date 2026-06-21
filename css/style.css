@@ -307,7 +307,6 @@ input[type="date"] {
   overflow-x: hidden;
   padding: 16px;
   padding-bottom: calc(var(--tab-h) + env(safe-area-inset-bottom, 0px) + 20px);
-  -webkit-overflow-scrolling: touch;
 }
 
 .tab-content > * {
@@ -800,8 +799,9 @@ input[type="date"] {
 
 /* === SCHEDULE TAB (PMG-style) === */
 .sched-sticky-header {
+  position: -webkit-sticky;
   position: sticky;
-  top: -17px;
+  top: 0;
   z-index: 10;
   background: var(--bg);
   margin: -16px -16px 8px -16px;

@@ -175,15 +175,25 @@ async function _renderToday() {
 }
 
 function buildTimeline(startHour, endHour, recurring, custom, dateStr) {
+  const now = new Date();
+  const isToday = dateStr === todayKey();
+  const currentHour = now.getHours() + now.getMinutes() / 60;
   let html = '';
   for (let h = startHour; h < endHour; h++) {
     const recBlock = recurring.find(b => h >= b.start && h < b.end);
     const customBlock = custom.find(b => h >= b.startHour && h < b.endHour);
     const isBlockStart = customBlock && Math.floor(customBlock.startHour) === h;
 
-    html += `<div class="timeline-hour">
+    const showIndicator = isToday && currentHour >= h && currentHour < h + 1;
+    const indicatorOffset = showIndicator ? ((currentHour - h) * 44) : 0;
+
+    html += `<div class="timeline-hour" style="position:relative;">
       <div class="timeline-label">${formatTime(h)}</div>
       <div class="timeline-slot" data-hour="${h}">`;
+
+    if (showIndicator) {
+      html += `<div class="time-indicator" style="top:${indicatorOffset}px;"></div>`;
+    }
 
     if (isBlockStart) {
       const spans = Math.ceil(customBlock.endHour - customBlock.startHour);

@@ -196,19 +196,30 @@ tabBtns.forEach(btn => {
 async function switchTab(tab) {
   currentTab = tab;
   tabBtns.forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+
+  // Smooth transition: fade out, render, fade in
+  tabContent.style.opacity = '0';
+  tabContent.style.transform = 'translateY(6px)';
+
   const renderer = getTabRenderer(tab);
   if (renderer) {
     try {
       await renderer();
     } catch (e) {
       console.error(tab + ' tab error:', e);
-      tabContent.innerHTML = `<div class="fade-in" style="text-align:center;padding:40px 16px;">
+      tabContent.innerHTML = `<div style="text-align:center;padding:40px 16px;">
         <div style="font-size:1.3rem;margin-bottom:8px;">⚠ Couldn't load ${tab}</div>
         <div style="color:var(--text-secondary);font-size:0.85rem;margin-bottom:16px;">${escapeHtml(e.message)}</div>
         <button class="btn-primary" onclick="switchTab('${tab}')">Retry</button>
       </div>`;
     }
   }
+
+  requestAnimationFrame(() => {
+    tabContent.style.transition = 'opacity 0.15s ease, transform 0.15s ease';
+    tabContent.style.opacity = '1';
+    tabContent.style.transform = 'translateY(0)';
+  });
 }
 
 // === Global Search ===

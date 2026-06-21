@@ -89,7 +89,7 @@ async function renderBudget() {
       </div>
 
       <div class="section-title">Quick Add</div>
-      <button class="btn-secondary" id="dairy-paycheck-btn" style="margin-bottom:12px;width:100%;">💰 Add Dairy Paycheck</button>
+      <button class="btn-secondary" id="paycheck-btn" style="margin-bottom:12px;width:100%;">💰 Add ${escapeHtml(settings.jobTitle || 'Work')} Paycheck</button>
 
       <div class="card budget-entry-form">
         <div class="card-title">Manual Entry</div>
@@ -174,15 +174,16 @@ async function renderBudget() {
     renderBudget();
   });
 
-  // Dairy paycheck
-  document.getElementById('dairy-paycheck-btn').addEventListener('click', async () => {
+  // Paycheck quick-add
+  document.getElementById('paycheck-btn').addEventListener('click', async () => {
+    const jobName = settings.jobTitle || 'Work';
     const amount = prompt('Paycheck amount ($):');
     if (!amount || isNaN(parseFloat(amount))) return;
     await userCollection('budgetEntries').add({
       type: 'income',
       amount: parseFloat(amount),
-      category: 'Dairy Paycheck',
-      description: 'Dairy paycheck',
+      category: jobName + ' Paycheck',
+      description: jobName + ' paycheck',
       date: todayKey(),
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });

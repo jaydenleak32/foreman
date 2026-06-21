@@ -310,6 +310,10 @@ input[type="date"] {
   -webkit-overflow-scrolling: touch;
 }
 
+.tab-content > * {
+  animation: fadeInUp 0.2s ease;
+}
+
 /* === Tab Bar === */
 .tab-bar {
   display: flex;
@@ -335,9 +339,11 @@ input[type="date"] {
   gap: 2px;
   position: relative;
   color: var(--text-muted);
-  transition: color var(--transition);
+  transition: color 0.15s ease, transform 0.1s ease;
+  -webkit-tap-highlight-color: transparent;
 }
 
+.tab-btn:active { transform: scale(0.92); }
 .tab-btn.active { color: var(--accent); }
 .tab-icon { font-size: 1.2rem; }
 .tab-label { font-size: 0.65rem; letter-spacing: 0.3px; }
@@ -764,6 +770,32 @@ input[type="date"] {
   text-transform: uppercase;
   color: var(--text-muted);
   margin-bottom: 6px;
+}
+
+/* Current time indicator */
+.timeline {
+  position: relative;
+}
+
+.time-indicator {
+  position: absolute;
+  left: 50px;
+  right: 0;
+  height: 2px;
+  background: var(--danger);
+  z-index: 10;
+  pointer-events: none;
+}
+
+.time-indicator::before {
+  content: '';
+  position: absolute;
+  left: -5px;
+  top: -4px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--danger);
 }
 
 /* === SCHEDULE TAB === */

@@ -197,6 +197,10 @@ async function switchTab(tab) {
   currentTab = tab;
   tabBtns.forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
 
+  // Hide schedule FAB on non-schedule tabs
+  const fab = document.getElementById('sched-fab');
+  if (fab && tab !== 'schedule') fab.classList.add('hidden');
+
   // Smooth transition: fade out, render, fade in
   tabContent.style.opacity = '0';
   tabContent.style.transform = 'translateY(6px)';

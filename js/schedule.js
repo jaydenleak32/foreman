@@ -117,10 +117,19 @@ async function renderSchedule() {
         <div class="pmg-tap-zone" id="pmg-tap-zone"></div>
       </div>
 
-      <!-- FAB -->
-      <button class="pmg-fab" id="sched-fab">+</button>
     </div>
   `;
+
+  // Show FAB (lives outside scrollable area)
+  let fab = document.getElementById('sched-fab');
+  if (!fab) {
+    fab = document.createElement('button');
+    fab.id = 'sched-fab';
+    fab.className = 'pmg-fab';
+    fab.textContent = '+';
+    document.getElementById('app').appendChild(fab);
+  }
+  fab.classList.remove('hidden');
 
   // Week strip nav
   tabContent.querySelectorAll('.week-day-btn').forEach(btn => {

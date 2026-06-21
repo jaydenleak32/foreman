@@ -205,6 +205,7 @@ async function switchTab(tab) {
     tabContent.style.display = '';
     tabContent.style.flexDirection = '';
     tabContent.style.overflow = '';
+    tabContent.style.paddingTop = '';
   }
 
   // Fade out current content

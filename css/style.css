@@ -801,15 +801,20 @@ input[type="date"] {
 .sched-sticky-header {
   background: var(--bg);
   margin: -16px -16px 0 -16px;
-  padding: 0 16px 6px 16px;
+  padding: 4px 16px 6px 16px;
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
+  z-index: 30;
+  position: relative;
 }
 
 .sched-scroll-body {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 12px 0;
+  position: relative;
+  z-index: 1;
 }
 
 .sched-header {

@@ -64,6 +64,7 @@ async function renderSchedule() {
   tabContent.style.display = 'flex';
   tabContent.style.flexDirection = 'column';
   tabContent.style.overflow = 'hidden';
+  tabContent.style.paddingTop = '0';
 
   tabContent.innerHTML = `
     <div class="sched-sticky-header">

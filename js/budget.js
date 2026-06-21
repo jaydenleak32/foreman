@@ -1,14 +1,24 @@
 // === BUDGET TAB ===
 
 let budgetPeriod = 'week';
+let _budgetCache = null;
 
-async function renderBudget() {
-  const [entriesSnap, goalDoc] = await Promise.all([
-    userCollection('budgetEntries').orderBy('date', 'desc').get(),
-    userDoc('budgetGoal').get()
-  ]);
-  const allEntries = [];
-  entriesSnap.forEach(d => allEntries.push({ id: d.id, ...d.data() }));
+async function renderBudget(useCache) {
+  if (!useCache) _budgetCache = null;
+  let allEntries, goal;
+
+  if (_budgetCache) {
+    ({ allEntries, goal } = _budgetCache);
+  } else {
+    const [entriesSnap, goalDoc] = await Promise.all([
+      userCollection('budgetEntries').orderBy('date', 'desc').get(),
+      userDoc('budgetGoal').get()
+    ]);
+    allEntries = [];
+    entriesSnap.forEach(d => allEntries.push({ id: d.id, ...d.data() }));
+    goal = goalDoc.exists ? goalDoc.data() : { target: 50000, label: 'Ranch Fund' };
+    _budgetCache = { allEntries, goal };
+  }
 
   const now = new Date();
   const filtered = filterByPeriod(allEntries, budgetPeriod, now);
@@ -30,7 +40,6 @@ async function renderBudget() {
 
   const tithePct = income > 0 ? ((tithing / income) * 100).toFixed(1) : 0;
 
-  const goal = goalDoc.exists ? goalDoc.data() : { target: 50000, label: 'Ranch Fund' };
   const totalSaved = allEntries.filter(e => e.category === 'Savings').reduce((s, e) => s + (e.amount || 0), 0);
   const goalPct = goal.target > 0 ? Math.min(100, (totalSaved / goal.target) * 100) : 0;
 
@@ -170,11 +179,11 @@ async function renderBudget() {
     </div>
   `;
 
-  // Period toggle
+  // Period toggle — use cache, no Firestore re-read
   tabContent.querySelectorAll('.toggle-group button[data-period]').forEach(btn => {
     btn.addEventListener('click', () => {
       budgetPeriod = btn.dataset.period;
-      renderBudget();
+      renderBudget(true);
     });
   });
 

@@ -249,16 +249,20 @@ function setupPeopleAutocomplete() {
   const list = document.getElementById('today-people-autocomplete');
   if (!input || !list) return;
 
+  let _peopleNames = null;
   input.addEventListener('input', debounce(async () => {
     const q = input.value.trim().toLowerCase();
     if (q.length < 1) { list.classList.add('hidden'); return; }
 
-    const snap = await userCollection('people').get();
-    const matches = [];
-    snap.forEach(doc => {
-      const d = doc.data();
-      if (d.name && d.name.toLowerCase().includes(q)) matches.push(d.name);
-    });
+    if (!_peopleNames) {
+      const snap = await userCollection('people').get();
+      _peopleNames = [];
+      snap.forEach(doc => {
+        const d = doc.data();
+        if (d.name) _peopleNames.push(d.name);
+      });
+    }
+    const matches = _peopleNames.filter(n => n.toLowerCase().includes(q));
 
     if (matches.length === 0) { list.classList.add('hidden'); return; }
     list.innerHTML = matches.slice(0, 5).map(m => `<div class="autocomplete-item">${escapeHtml(m)}</div>`).join('');

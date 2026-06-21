@@ -3,6 +3,7 @@
 const GTD_CONTEXTS = ['@Dairy', '@Laptop', '@Phone', '@Errands', '@Home', '@Fitness', '@Anywhere'];
 let inboxFilter = 'inbox';
 let contextFilter = 'all';
+let _inboxCache = null;
 
 const DEFAULT_PROJECTS = [
   { title: 'Finish business degree', group: 'Ranch Manager', nextAction: '' },
@@ -12,34 +13,42 @@ const DEFAULT_PROJECTS = [
   { title: 'Financial readiness for ranch investment', group: 'Ranch Manager', nextAction: '' },
 ];
 
-async function renderInbox() {
-  const [inboxSnap, actionsSnap, waitingSnap, somedaySnap, projectsSnap] = await Promise.all([
-    userCollection('inbox').orderBy('createdAt', 'desc').get(),
-    userCollection('actions').orderBy('createdAt', 'desc').get(),
-    userCollection('waiting').orderBy('createdAt', 'desc').get(),
-    userCollection('someday').orderBy('createdAt', 'desc').get(),
-    userCollection('projects').orderBy('order').get()
-  ]);
+async function renderInbox(useCache) {
+  let inboxItems, activeActions, waiting, someday, projects;
 
-  const inboxItems = [];
-  inboxSnap.forEach(d => inboxItems.push({ id: d.id, ...d.data() }));
-  const actions = [];
-  actionsSnap.forEach(d => actions.push({ id: d.id, ...d.data() }));
-  const activeActions = actions.filter(a => !a.completed);
-  const waiting = [];
-  waitingSnap.forEach(d => waiting.push({ id: d.id, ...d.data() }));
-  const someday = [];
-  somedaySnap.forEach(d => someday.push({ id: d.id, ...d.data() }));
-  let projects = [];
-  projectsSnap.forEach(d => projects.push({ id: d.id, ...d.data() }));
+  if (useCache && _inboxCache) {
+    ({ inboxItems, activeActions, waiting, someday, projects } = _inboxCache);
+  } else {
+    const [inboxSnap, actionsSnap, waitingSnap, somedaySnap, projectsSnap] = await Promise.all([
+      userCollection('inbox').orderBy('createdAt', 'desc').get(),
+      userCollection('actions').orderBy('createdAt', 'desc').get(),
+      userCollection('waiting').orderBy('createdAt', 'desc').get(),
+      userCollection('someday').orderBy('createdAt', 'desc').get(),
+      userCollection('projects').orderBy('order').get()
+    ]);
 
-  if (projects.length === 0) {
-    for (let i = 0; i < DEFAULT_PROJECTS.length; i++) {
-      await userCollection('projects').add({ ...DEFAULT_PROJECTS[i], order: i });
-    }
-    projectsSnap = await userCollection('projects').orderBy('order').get();
+    inboxItems = [];
+    inboxSnap.forEach(d => inboxItems.push({ id: d.id, ...d.data() }));
+    const actions = [];
+    actionsSnap.forEach(d => actions.push({ id: d.id, ...d.data() }));
+    activeActions = actions.filter(a => !a.completed);
+    waiting = [];
+    waitingSnap.forEach(d => waiting.push({ id: d.id, ...d.data() }));
+    someday = [];
+    somedaySnap.forEach(d => someday.push({ id: d.id, ...d.data() }));
     projects = [];
     projectsSnap.forEach(d => projects.push({ id: d.id, ...d.data() }));
+
+    if (projects.length === 0) {
+      for (let i = 0; i < DEFAULT_PROJECTS.length; i++) {
+        await userCollection('projects').add({ ...DEFAULT_PROJECTS[i], order: i });
+      }
+      const ps = await userCollection('projects').orderBy('order').get();
+      projects = [];
+      ps.forEach(d => projects.push({ id: d.id, ...d.data() }));
+    }
+
+    _inboxCache = { inboxItems, activeActions, waiting, someday, projects };
   }
 
   // Update badge
@@ -81,19 +90,19 @@ async function renderInbox() {
   document.getElementById('inbox-add-btn').addEventListener('click', () => addToInbox(inboxInput));
   inboxInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') addToInbox(inboxInput); });
 
-  // Filter toggle
+  // Filter toggle — use cache, no Firestore re-read
   tabContent.querySelectorAll('.toggle-group button').forEach(btn => {
     btn.addEventListener('click', () => {
       inboxFilter = btn.dataset.filter;
-      renderInbox();
+      renderInbox(true);
     });
   });
 
-  // Context filter chips
+  // Context filter chips — use cache
   tabContent.querySelectorAll('.chip[data-context]').forEach(chip => {
     chip.addEventListener('click', () => {
       contextFilter = chip.dataset.context;
-      renderInbox();
+      renderInbox(true);
     });
   });
 
@@ -179,6 +188,7 @@ async function addToInbox(input) {
   if (!text) return;
   await userCollection('inbox').add({ text, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
   input.value = '';
+  _inboxCache = null;
   renderInbox();
 }
 
@@ -291,5 +301,6 @@ async function processInboxItem(type, id, text) {
     // Keep the inbox item data for undo
   }
   await userCollection('inbox').doc(id).delete();
+  _inboxCache = null;
   renderInbox();
 }

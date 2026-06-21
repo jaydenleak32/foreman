@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#1a1a1a">
+  <title>Foreman</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- PIN Lock Screen -->
+  <div id="pin-lock" class="pin-lock hidden">
+    <div class="pin-lock-inner">
+      <h2>Foreman</h2>
+      <p>Enter PIN</p>
+      <div class="pin-dots">
+        <span class="pin-dot"></span><span class="pin-dot"></span><span class="pin-dot"></span><span class="pin-dot"></span>
+      </div>
+      <div class="pin-pad">
+        <button data-digit="1">1</button><button data-digit="2">2</button><button data-digit="3">3</button>
+        <button data-digit="4">4</button><button data-digit="5">5</button><button data-digit="6">6</button>
+        <button data-digit="7">7</button><button data-digit="8">8</button><button data-digit="9">9</button>
+        <button data-digit="">⌫</button><button data-digit="0">0</button><button data-digit="enter">→</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Auth Screen -->
+  <div id="auth-screen" class="auth-screen">
+    <div class="auth-inner">
+      <h1>Foreman</h1>
+      <p class="auth-subtitle">Your GTD system, built for the work.</p>
+      <form id="auth-form">
+        <input type="email" id="auth-email" placeholder="Email" required autocomplete="email">
+        <input type="password" id="auth-password" placeholder="Password" required autocomplete="current-password">
+        <button type="submit" id="auth-submit" class="btn-primary">Sign In</button>
+        <button type="button" id="auth-toggle" class="btn-text">Need an account? Sign up</button>
+      </form>
+      <p id="auth-error" class="auth-error"></p>
+    </div>
+  </div>
+
+  <!-- Main App -->
+  <div id="app" class="app hidden">
+    <!-- Header -->
+    <header class="header">
+      <h1 class="header-title">Foreman</h1>
+      <div class="header-actions">
+        <div class="search-wrapper">
+          <input type="text" id="global-search" placeholder="Search..." class="search-input">
+          <div id="search-results" class="search-results hidden"></div>
+        </div>
+        <button id="settings-btn" class="icon-btn" aria-label="Settings">⚙</button>
+      </div>
+    </header>
+
+    <!-- Tab Content -->
+    <main id="tab-content" class="tab-content"></main>
+
+    <!-- Bottom Tab Bar -->
+    <nav class="tab-bar">
+      <button class="tab-btn active" data-tab="today">
+        <span class="tab-icon">☀</span>
+        <span class="tab-label">Today</span>
+      </button>
+      <button class="tab-btn" data-tab="schedule">
+        <span class="tab-icon">📅</span>
+        <span class="tab-label">Schedule</span>
+      </button>
+      <button class="tab-btn" data-tab="inbox">
+        <span class="tab-icon">📥</span>
+        <span class="tab-label">Inbox</span>
+        <span id="inbox-badge" class="badge hidden">0</span>
+      </button>
+      <button class="tab-btn" data-tab="people">
+        <span class="tab-icon">👤</span>
+        <span class="tab-label">People</span>
+      </button>
+      <button class="tab-btn" data-tab="review">
+        <span class="tab-icon">📊</span>
+        <span class="tab-label">Review</span>
+      </button>
+      <button class="tab-btn" data-tab="budget">
+        <span class="tab-icon">💰</span>
+        <span class="tab-label">Budget</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- Settings Modal -->
+  <div id="settings-modal" class="modal hidden">
+    <div class="modal-content settings-content">
+      <div class="modal-header">
+        <h2>Settings</h2>
+        <button class="modal-close" id="settings-close">✕</button>
+      </div>
+      <div class="modal-body" id="settings-body"></div>
+    </div>
+  </div>
+
+  <!-- Undo Toast -->
+  <div id="undo-toast" class="undo-toast hidden">
+    <span id="undo-text"></span>
+    <button id="undo-btn" class="btn-text">Undo</button>
+  </div>
+
+  <!-- Firebase SDK via CDN -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+  <script src="js/app.js"></script>
+  <script src="js/today.js"></script>
+  <script src="js/schedule.js"></script>
+  <script src="js/inbox.js"></script>
+  <script src="js/people.js"></script>
+  <script src="js/review.js"></script>
+  <script src="js/budget.js"></script>
+  <script src="js/settings.js"></script>
+</body>
+</html>

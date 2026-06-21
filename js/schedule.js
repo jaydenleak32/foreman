@@ -61,16 +61,15 @@ async function renderSchedule() {
   const totalHeight = (SCHEDULE_END - SCHEDULE_START) * HOUR_HEIGHT;
 
   tabContent.innerHTML = `
-    <div class="fade-in">
-      <div class="sched-sticky-header">
-        ${buildCalendarHeader()}
-        ${calendarExpanded ? buildMonthGrid() : buildWeekStrip()}
-        <div class="sched-toolbar">
-          <button class="btn-text" id="sched-today-btn" ${isToday ? 'disabled style="opacity:0.4;"' : ''}>Today</button>
-          <button class="btn-text" id="sched-routines-btn">⚙ Routines</button>
-        </div>
+    <div class="sched-sticky-header">
+      ${buildCalendarHeader()}
+      ${calendarExpanded ? buildMonthGrid() : buildWeekStrip()}
+      <div class="sched-toolbar">
+        <button class="btn-text" id="sched-today-btn" ${isToday ? 'disabled style="opacity:0.4;"' : ''}>Today</button>
+        <button class="btn-text" id="sched-routines-btn">⚙ Routines</button>
       </div>
-
+    </div>
+    <div class="fade-in">
       ${allDayBlocks.length ? `
         <div class="all-day-section">
           <div class="all-day-label">ALL DAY</div>

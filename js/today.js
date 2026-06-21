@@ -1,6 +1,10 @@
 // === TODAY TAB ===
 
 async function renderToday() {
+  if (!currentUser) {
+    tabContent.innerHTML = '<div style="text-align:center;padding:60px 0;color:var(--text-muted);">Signing in...</div>';
+    return;
+  }
   try {
     await _renderToday();
   } catch (e) {

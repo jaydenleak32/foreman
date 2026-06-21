@@ -178,15 +178,7 @@ const tabBtns = document.querySelectorAll('.tab-btn');
 const tabContent = document.getElementById('tab-content');
 
 function getTabRenderer(tab) {
-  const map = {
-    today: typeof renderToday !== 'undefined' ? renderToday : null,
-    schedule: typeof renderSchedule !== 'undefined' ? renderSchedule : null,
-    inbox: typeof renderInbox !== 'undefined' ? renderInbox : null,
-    people: typeof renderPeople !== 'undefined' ? renderPeople : null,
-    review: typeof renderReview !== 'undefined' ? renderReview : null,
-    budget: typeof renderBudget !== 'undefined' ? renderBudget : null,
-  };
-  return map[tab];
+  return window['render' + tab.charAt(0).toUpperCase() + tab.slice(1)] || null;
 }
 
 tabBtns.forEach(btn => {
@@ -197,28 +189,37 @@ async function switchTab(tab) {
   currentTab = tab;
   tabBtns.forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
 
-  // Hide schedule FAB on non-schedule tabs
   const fab = document.getElementById('sched-fab');
   if (fab && tab !== 'schedule') fab.classList.add('hidden');
 
-  // Smooth transition: fade out, render, fade in
+  // Fade out current content
   tabContent.style.opacity = '0';
   tabContent.style.transform = 'translateY(6px)';
 
   const renderer = getTabRenderer(tab);
-  if (renderer) {
-    try {
-      await renderer();
-    } catch (e) {
-      console.error(tab + ' tab error:', e);
-      tabContent.innerHTML = `<div style="text-align:center;padding:40px 16px;">
-        <div style="font-size:1.3rem;margin-bottom:8px;">⚠ Couldn't load ${tab}</div>
-        <div style="color:var(--text-secondary);font-size:0.85rem;margin-bottom:16px;">${escapeHtml(e.message)}</div>
-        <button class="btn-primary" onclick="switchTab('${tab}')">Retry</button>
-      </div>`;
-    }
+  if (!renderer) {
+    // Script hasn't loaded yet — show loading and retry shortly
+    tabContent.innerHTML = '<div style="text-align:center;padding:60px 0;color:var(--text-muted);">Loading...</div>';
+    fadeIn();
+    await new Promise(r => setTimeout(r, 200));
+    return switchTab(tab);
   }
 
+  try {
+    await renderer();
+  } catch (e) {
+    console.error(tab + ' tab error:', e);
+    tabContent.innerHTML = `<div style="text-align:center;padding:40px 16px;">
+      <div style="font-size:1.3rem;margin-bottom:8px;">⚠ Cannot load ${tab}</div>
+      <div style="color:var(--text-secondary);font-size:0.85rem;margin-bottom:16px;">${escapeHtml(e.message)}</div>
+      <button class="btn-primary" onclick="switchTab('${tab}')">Retry</button>
+    </div>`;
+  }
+
+  fadeIn();
+}
+
+function fadeIn() {
   requestAnimationFrame(() => {
     tabContent.style.transition = 'opacity 0.15s ease, transform 0.15s ease';
     tabContent.style.opacity = '1';
@@ -386,7 +387,7 @@ function escapeHtml(text) {
 
 // === Init ===
 async function initApp() {
-  const tab = settings.defaultTab || ‘today’;
+  const tab = settings.defaultTab || 'today';
   await switchTab(tab);
 }
 

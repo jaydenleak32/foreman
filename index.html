@@ -108,18 +108,21 @@
     <button id="undo-btn" class="btn-text">Undo</button>
   </div>
 
-  <!-- Firebase SDK via CDN -->
+  <!-- Firebase SDK — load async, app.js waits for them -->
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 
+  <!-- Core app logic -->
   <script src="js/app.js"></script>
   <script src="js/today.js"></script>
-  <script src="js/schedule.js"></script>
-  <script src="js/inbox.js"></script>
-  <script src="js/people.js"></script>
-  <script src="js/review.js"></script>
-  <script src="js/budget.js"></script>
-  <script src="js/settings.js"></script>
+
+  <!-- Deferred: only needed after first tab renders -->
+  <script src="js/schedule.js" defer></script>
+  <script src="js/inbox.js" defer></script>
+  <script src="js/people.js" defer></script>
+  <script src="js/review.js" defer></script>
+  <script src="js/budget.js" defer></script>
+  <script src="js/settings.js" defer></script>
 </body>
 </html>

@@ -11,6 +11,17 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
+db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
+
+// Offline indicator
+var _offlineEl = null;
+db.enableNetwork();
+window.addEventListener('online', () => updateOffline(false));
+window.addEventListener('offline', () => updateOffline(true));
+function updateOffline(isOffline) {
+  if (!_offlineEl) _offlineEl = document.getElementById('offline-badge');
+  if (_offlineEl) _offlineEl.classList.toggle('hidden', !isOffline);
+}
 
 let currentUser = null;
 let currentTab = 'today';

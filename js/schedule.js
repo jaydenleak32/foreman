@@ -62,12 +62,13 @@ async function renderSchedule() {
 
   tabContent.innerHTML = `
     <div class="fade-in">
-      ${buildCalendarHeader()}
-      ${calendarExpanded ? buildMonthGrid() : buildWeekStrip()}
-
-      <div class="sched-toolbar">
-        <button class="btn-text" id="sched-today-btn" ${isToday ? 'disabled style="opacity:0.4;"' : ''}>Today</button>
-        <button class="btn-text" id="sched-routines-btn">⚙ Routines</button>
+      <div class="sched-sticky-header">
+        ${buildCalendarHeader()}
+        ${calendarExpanded ? buildMonthGrid() : buildWeekStrip()}
+        <div class="sched-toolbar">
+          <button class="btn-text" id="sched-today-btn" ${isToday ? 'disabled style="opacity:0.4;"' : ''}>Today</button>
+          <button class="btn-text" id="sched-routines-btn">⚙ Routines</button>
+        </div>
       </div>
 
       ${allDayBlocks.length ? `
@@ -104,11 +105,15 @@ async function renderSchedule() {
   setupDaySwipe();
 
   // Scroll to current time or 8 AM
-  const timeline = document.getElementById('pmg-timeline');
-  if (timeline) {
-    const target = timeIndicatorTop >= 0 ? timeIndicatorTop - 100 : (8 - SCHEDULE_START) * HOUR_HEIGHT;
-    setTimeout(() => tabContent.scrollTop = target, 50);
-  }
+  requestAnimationFrame(() => {
+    const timeline = document.getElementById('pmg-timeline');
+    if (timeline) {
+      const headerHeight = document.querySelector('.sched-sticky-header')?.offsetHeight || 0;
+      const timelineTop = timeline.offsetTop;
+      const offset = timeIndicatorTop >= 0 ? timeIndicatorTop - 80 : (8 - SCHEDULE_START) * HOUR_HEIGHT;
+      tabContent.scrollTop = timelineTop + offset - headerHeight;
+    }
+  });
 }
 
 // === Calendar Header ===

@@ -11,7 +11,6 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
-db.enablePersistence().catch(() => {});
 
 let currentUser = null;
 let currentTab = 'today';
@@ -74,7 +73,13 @@ auth.onAuthStateChanged(async (user) => {
   if (user) {
     currentUser = user;
     authScreen.classList.add('hidden');
-    await loadSettings();
+    try {
+      await loadSettings();
+    } catch (e) {
+      console.warn('Failed to load settings, using defaults:', e.message);
+      settings = { ...DEFAULT_SETTINGS };
+      applyTheme(settings.theme);
+    }
     checkPinLock();
   } else {
     currentUser = null;
@@ -152,7 +157,7 @@ function applyTheme(theme) {
 
 // === Firestore Helpers ===
 function userDoc(path) {
-  return db.collection('users').doc(currentUser.uid).collection('data').doc(path);
+  return db.collection('users').doc(currentUser.uid).collection('data').doc(path.replace(/\//g, '_'));
 }
 
 function userCollection(path) {
@@ -172,23 +177,38 @@ function todayKey() {
 const tabBtns = document.querySelectorAll('.tab-btn');
 const tabContent = document.getElementById('tab-content');
 
-const tabRenderers = {
-  today: renderToday,
-  schedule: renderSchedule,
-  inbox: renderInbox,
-  people: renderPeople,
-  review: renderReview,
-  budget: renderBudget
-};
+function getTabRenderer(tab) {
+  const map = {
+    today: typeof renderToday !== 'undefined' ? renderToday : null,
+    schedule: typeof renderSchedule !== 'undefined' ? renderSchedule : null,
+    inbox: typeof renderInbox !== 'undefined' ? renderInbox : null,
+    people: typeof renderPeople !== 'undefined' ? renderPeople : null,
+    review: typeof renderReview !== 'undefined' ? renderReview : null,
+    budget: typeof renderBudget !== 'undefined' ? renderBudget : null,
+  };
+  return map[tab];
+}
 
 tabBtns.forEach(btn => {
   btn.addEventListener('click', () => switchTab(btn.dataset.tab));
 });
 
-function switchTab(tab) {
+async function switchTab(tab) {
   currentTab = tab;
   tabBtns.forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
-  if (tabRenderers[tab]) tabRenderers[tab]();
+  const renderer = getTabRenderer(tab);
+  if (renderer) {
+    try {
+      await renderer();
+    } catch (e) {
+      console.error(tab + ' tab error:', e);
+      tabContent.innerHTML = `<div class="fade-in" style="text-align:center;padding:40px 16px;">
+        <div style="font-size:1.3rem;margin-bottom:8px;">⚠ Couldn't load ${tab}</div>
+        <div style="color:var(--text-secondary);font-size:0.85rem;margin-bottom:16px;">${escapeHtml(e.message)}</div>
+        <button class="btn-primary" onclick="switchTab('${tab}')">Retry</button>
+      </div>`;
+    }
+  }
 }
 
 // === Global Search ===
@@ -351,9 +371,14 @@ function escapeHtml(text) {
 }
 
 // === Init ===
-function initApp() {
+async function initApp() {
   const tab = settings.defaultTab || 'today';
   switchTab(tab);
+  // If first render fails (Firestore not ready), retry after a short delay
+  await new Promise(r => setTimeout(r, 500));
+  if (tabContent.innerHTML === '' || tabContent.innerHTML.includes('Couldn’t load')) {
+    switchTab(tab);
+  }
 }
 
 // === Settings Button ===

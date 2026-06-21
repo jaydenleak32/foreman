@@ -9,17 +9,22 @@ async function renderReview() {
   ];
 
   const weekKey = getWeekKey(new Date());
-  const reviewDoc = await userDoc('reviews/' + weekKey).get();
+  const reviewDoc = await userDoc('reviews_' + weekKey).get();
   const reviewData = reviewDoc.exists ? reviewDoc.data() : {};
 
   const indicators = reviewData.indicators || {};
   const gutCheck = reviewData.gutCheck || 5;
   const journal = reviewData.journal || '';
 
-  // Build habit grid data (last 7 weeks)
+  // Build empty grids first, load data in background
   const habitGrids = {};
+  const emptyGrid = [];
+  for (let i = 48; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    emptyGrid.push({ date: dateKey(d), done: false, level: 0 });
+  }
   for (const habit of habitConfig) {
-    habitGrids[habit] = await buildHabitGrid(habit, 7);
+    habitGrids[habit] = [...emptyGrid];
   }
 
   tabContent.innerHTML = `
@@ -136,7 +141,7 @@ async function renderReview() {
       document.querySelectorAll('.gtd-check').forEach(el => {
         checklist[el.dataset.key] = el.classList.contains('checked');
       });
-      await userDoc('reviews/' + weekKey).set({
+      await userDoc('reviews_' + weekKey).set({
         indicators: ind,
         gutCheck: parseInt(document.getElementById('gut-slider').value),
         journal: document.getElementById('review-journal').value,
@@ -203,7 +208,7 @@ async function buildHabitGrid(habit, weeks) {
     const d = new Date(today);
     d.setDate(d.getDate() - i);
     const key = dateKey(d);
-    const doc = await userDoc('days/' + key).get();
+    const doc = await userDoc('days_' + key).get();
     const done = doc.exists && doc.data().habits && doc.data().habits[habit];
     cells.push({
       date: key,
@@ -285,7 +290,7 @@ function startWizard() {
         step++;
         renderStep();
       } else {
-        await userDoc('reviews/' + weekKey).set({
+        await userDoc('reviews_' + weekKey).set({
           ...wizardData,
           savedAt: firebase.firestore.FieldValue.serverTimestamp()
         }, { merge: true });

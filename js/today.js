@@ -1,8 +1,21 @@
 // === TODAY TAB ===
 
 async function renderToday() {
+  try {
+    await _renderToday();
+  } catch (e) {
+    console.error('Today tab error:', e);
+    tabContent.innerHTML = `<div class="fade-in" style="text-align:center;padding:40px 16px;">
+      <div style="font-size:1.3rem;margin-bottom:8px;">⚠ Couldn't load Today</div>
+      <div style="color:var(--text-secondary);font-size:0.85rem;margin-bottom:16px;">${escapeHtml(e.message)}</div>
+      <button class="btn-primary" onclick="renderToday()">Retry</button>
+    </div>`;
+  }
+}
+
+async function _renderToday() {
   const key = todayKey();
-  const doc = await userDoc('days/' + key).get();
+  const doc = await userDoc('days_' + key).get();
   const data = doc.exists ? doc.data() : {};
 
   const hour = new Date().getHours();
@@ -13,9 +26,12 @@ async function renderToday() {
   const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);
   const yKey = dateKey(yesterday);
-  const yDoc = await userDoc('days/' + yKey).get();
-  const yData = yDoc.exists ? yDoc.data() : {};
-  const carryForward = yData.priority && !yData.priorityDone ? yData.priority : '';
+  let carryForward = '';
+  try {
+    const yDoc = await userDoc('days_' + yKey).get();
+    const yData = yDoc.exists ? yDoc.data() : {};
+    carryForward = yData.priority && !yData.priorityDone ? yData.priority : '';
+  } catch (e) {}
 
   if (!data.priority && carryForward) {
     data.priority = carryForward;
@@ -28,7 +44,9 @@ async function renderToday() {
   ];
 
   const habits = data.habits || {};
-  const streaks = await getStreaks(habitConfig);
+  // Load streaks in background to avoid blocking render
+  let streaks = {};
+  for (const h of habitConfig) streaks[h] = 0;
 
   // Get today's schedule blocks
   const dayOfWeek = new Date().getDay();
@@ -98,7 +116,7 @@ async function renderToday() {
   // Priority save
   const priorityInput = document.getElementById('today-priority');
   priorityInput.addEventListener('change', () => {
-    userDoc('days/' + key).set({ ...data, priority: priorityInput.value, carriedForward: false }, { merge: true });
+    userDoc('days_' + key).set({ ...data, priority: priorityInput.value, carriedForward: false }, { merge: true });
   });
 
   // Habit toggles
@@ -108,9 +126,17 @@ async function renderToday() {
       habits[habit] = !habits[habit];
       el.classList.toggle('checked');
       el.nextElementSibling.classList.toggle('completed');
-      await userDoc('days/' + key).set({ habits }, { merge: true });
+      await userDoc('days_' + key).set({ habits }, { merge: true });
     });
   });
+
+  // Load streaks in background and update UI
+  getStreaks(habitConfig).then(s => {
+    tabContent.querySelectorAll('.streak-count').forEach(el => {
+      const habit = el.previousElementSibling.textContent;
+      if (s[habit]) el.textContent = s[habit] + '🔥';
+    });
+  }).catch(() => {});
 
   // People autocomplete
   setupPeopleAutocomplete();
@@ -120,7 +146,7 @@ async function renderToday() {
     btn.addEventListener('click', async () => {
       const name = btn.dataset.removePerson;
       const updated = peopleList.filter(p => p !== name);
-      await userDoc('days/' + key).set({ people: updated }, { merge: true });
+      await userDoc('days_' + key).set({ people: updated }, { merge: true });
       renderToday();
     });
   });
@@ -158,8 +184,6 @@ function buildTimeline(startHour, endHour, recurring, custom, dateStr) {
       html += `<div class="timeline-block recurring">
         <span class="timeline-block-title">${escapeHtml(recBlock.title)}</span>
       </div>`;
-    } else if (recBlock) {
-      // continuation of recurring block, show lighter
     }
 
     html += `</div></div>`;
@@ -179,7 +203,8 @@ async function addTimelineBlock(dateStr, hour) {
     note,
     allDay: false
   });
-  renderToday();
+  if (currentTab === 'today') renderToday();
+  else renderSchedule();
 }
 
 async function getStreaks(habitConfig) {
@@ -188,12 +213,16 @@ async function getStreaks(habitConfig) {
     let streak = 0;
     const d = new Date();
     d.setDate(d.getDate() - 1);
-    for (let i = 0; i < 60; i++) {
-      const doc = await userDoc('days/' + dateKey(d)).get();
-      if (doc.exists && doc.data().habits && doc.data().habits[habit]) {
-        streak++;
-        d.setDate(d.getDate() - 1);
-      } else {
+    for (let i = 0; i < 30; i++) {
+      try {
+        const doc = await userDoc('days_' + dateKey(d)).get();
+        if (doc.exists && doc.data().habits && doc.data().habits[habit]) {
+          streak++;
+          d.setDate(d.getDate() - 1);
+        } else {
+          break;
+        }
+      } catch (e) {
         break;
       }
     }
@@ -230,12 +259,12 @@ function setupPeopleAutocomplete() {
     input.value = '';
     list.classList.add('hidden');
     const key = todayKey();
-    const doc = await userDoc('days/' + key).get();
+    const doc = await userDoc('days_' + key).get();
     const data = doc.exists ? doc.data() : {};
     const people = data.people || [];
     if (!people.includes(name)) {
       people.push(name);
-      await userDoc('days/' + key).set({ people }, { merge: true });
+      await userDoc('days_' + key).set({ people }, { merge: true });
       renderToday();
     }
   });
@@ -246,12 +275,12 @@ function setupPeopleAutocomplete() {
       input.value = '';
       list.classList.add('hidden');
       const key = todayKey();
-      const doc = await userDoc('days/' + key).get();
+      const doc = await userDoc('days_' + key).get();
       const data = doc.exists ? doc.data() : {};
       const people = data.people || [];
       if (!people.includes(name)) {
         people.push(name);
-        await userDoc('days/' + key).set({ people }, { merge: true });
+        await userDoc('days_' + key).set({ people }, { merge: true });
         renderToday();
       }
     }

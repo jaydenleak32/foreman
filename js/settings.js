@@ -80,21 +80,6 @@ function renderSettings() {
     </div>
 
     <div class="settings-section">
-      <div class="settings-section-title">Recurring Schedule Blocks</div>
-      <div id="recurring-blocks-list">
-        ${(settings.recurringBlocks || []).map((b, i) => `
-          <div class="recurring-block-item">
-            <span style="flex:1;">${escapeHtml(b.title)}</span>
-            <span>${formatTime(b.start)}-${formatTime(b.end)}</span>
-            <span class="days">${b.days.map(d => ['Su','Mo','Tu','We','Th','Fr','Sa'][d]).join(',')}</span>
-            <button class="btn-text" style="font-size:0.7rem;" data-delete-recurring="${i}">✕</button>
-          </div>
-        `).join('')}
-      </div>
-      <button class="btn-secondary" id="add-recurring-btn" style="margin-top:8px;">+ Add Recurring Block</button>
-    </div>
-
-    <div class="settings-section">
       <div class="settings-section-title">Data</div>
       <button class="btn-secondary" id="export-data-btn" style="width:100%;margin-bottom:8px;">📥 Export All Data (JSON)</button>
       <button class="btn-secondary btn-danger" id="signout-btn" style="width:100%;">Sign Out</button>
@@ -126,33 +111,9 @@ function renderSettings() {
     switchTab(currentTab);
   });
 
-  // Add recurring block
-  document.getElementById('add-recurring-btn').addEventListener('click', () => {
-    const title = prompt('Block title (e.g. "Gym"):');
-    if (!title) return;
-    const start = parseInt(prompt('Start hour (0-23):'));
-    const end = parseInt(prompt('End hour (0-23):'));
-    if (isNaN(start) || isNaN(end)) return;
-    const daysStr = prompt('Days (comma separated: 0=Sun,1=Mon,...6=Sat):') || '1,2,3,4,5';
-    const days = daysStr.split(',').map(d => parseInt(d.trim())).filter(d => !isNaN(d));
-
-    settings.recurringBlocks = settings.recurringBlocks || [];
-    settings.recurringBlocks.push({ title, start, end, days, color: 'recurring' });
-    renderSettings();
-  });
-
-  // Delete recurring
-  body.querySelectorAll('[data-delete-recurring]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const idx = parseInt(btn.dataset.deleteRecurring);
-      settings.recurringBlocks.splice(idx, 1);
-      renderSettings();
-    });
-  });
-
   // Export
   document.getElementById('export-data-btn').addEventListener('click', async () => {
-    const collections = ['inbox', 'actions', 'projects', 'waiting', 'someday', 'people', 'budgetEntries', 'scheduleBlocks'];
+    const collections = ['inbox', 'actions', 'projects', 'waiting', 'someday', 'people', 'budgetEntries', 'scheduleBlocks', 'routines'];
     const data = { settings };
 
     for (const col of collections) {

@@ -61,6 +61,25 @@ html, body {
 
 input, textarea, select { user-select: text; -webkit-user-select: text; }
 
+/* Global touch feedback */
+.card, .person-card, .inbox-item, .project-card, .entry-list-item,
+.routine-card, .action-item, .waiting-item, .someday-item,
+.summary-card, .allday-chip, .checkbox-row {
+  transition: transform 0.1s ease, opacity 0.1s ease;
+}
+
+.card:active, .person-card:active, .inbox-item:active,
+.project-card:active, .routine-card:active,
+.summary-card:active, .allday-chip:active {
+  transform: scale(0.98);
+  opacity: 0.85;
+}
+
+.btn-primary:active, .btn-secondary:active, .btn-sm:active {
+  transform: scale(0.96);
+  opacity: 0.85;
+}
+
 button {
   font-family: inherit;
   font-size: inherit;
@@ -321,9 +340,6 @@ input[type="date"] {
   padding-bottom: calc(var(--tab-h) + env(safe-area-inset-bottom, 0px) + 20px);
 }
 
-.tab-content > * {
-  animation: fadeInUp 0.2s ease;
-}
 
 /* === Tab Bar === */
 .tab-bar {

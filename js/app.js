@@ -208,7 +208,7 @@ async function switchTab(tab) {
   currentTab = tab;
   tabBtns.forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
 
-  const fab = document.getElementById('sched-fab');
+  var fab = document.getElementById('sched-fab');
   if (fab && tab !== 'schedule') fab.classList.add('hidden');
 
   // Reset schedule flex layout when leaving schedule tab
@@ -219,31 +219,31 @@ async function switchTab(tab) {
     tabContent.style.paddingTop = '';
   }
 
-  // Fade out current content
-  tabContent.style.opacity = '0';
-  tabContent.style.transform = 'translateY(6px)';
-
-  const renderer = getTabRenderer(tab);
+  var renderer = getTabRenderer(tab);
   if (!renderer) {
-    // Script hasn't loaded yet — show loading and retry shortly
-    tabContent.innerHTML = '<div style="text-align:center;padding:60px 0;color:var(--text-muted);">Loading...</div>';
-    fadeIn();
+    tabContent.style.opacity = '0.4';
     await new Promise(r => setTimeout(r, 200));
     return switchTab(tab);
   }
+
+  // Keep old content visible while loading new content
+  tabContent.style.transition = 'opacity 0.1s ease';
+  tabContent.style.opacity = '0.5';
 
   try {
     await renderer();
   } catch (e) {
     console.error(tab + ' tab error:', e);
     tabContent.innerHTML = `<div style="text-align:center;padding:40px 16px;">
-      <div style="font-size:1.3rem;margin-bottom:8px;">⚠ Cannot load ${tab}</div>
+      <div style="font-size:1.3rem;margin-bottom:8px;">Cannot load ${tab}</div>
       <div style="color:var(--text-secondary);font-size:0.85rem;margin-bottom:16px;">${escapeHtml(e.message)}</div>
       <button class="btn-primary" onclick="switchTab('${tab}')">Retry</button>
     </div>`;
   }
 
-  fadeIn();
+  // Fade in new content
+  tabContent.style.transition = 'opacity 0.15s ease';
+  tabContent.style.opacity = '1';
 }
 
 function fadeIn() {
@@ -480,3 +480,8 @@ document.getElementById('settings-btn').addEventListener('click', () => {
 document.getElementById('settings-close').addEventListener('click', () => {
   document.getElementById('settings-modal').classList.add('hidden');
 });
+
+// === Service Worker ===
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').catch(() => {});
+}

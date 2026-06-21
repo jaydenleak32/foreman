@@ -13,10 +13,15 @@ async function renderBudget() {
   const income = filtered.filter(e => e.type === 'income').reduce((s, e) => s + (e.amount || 0), 0);
   const tithing = filtered.filter(e => e.category === 'Tithing').reduce((s, e) => s + (e.amount || 0), 0);
   const expenses = filtered.filter(e => e.type === 'expense').reduce((s, e) => s + (e.amount || 0), 0);
-  const saved = filtered.filter(e => e.category === 'Savings').reduce((s, e) => s + (e.amount || 0), 0);
+  const savedExplicit = filtered.filter(e => e.category === 'Savings').reduce((s, e) => s + (e.amount || 0), 0);
+  const spent = filtered.filter(e => e.type === 'expense' && e.category !== 'Savings').reduce((s, e) => s + (e.amount || 0), 0);
+
+  // Auto-calculate: available = income - tithing - spending - explicit savings
+  const available = income - tithing - spent - savedExplicit;
+
   const tithePct = income > 0 ? ((tithing / income) * 100).toFixed(1) : 0;
 
-  // Ranch fund goal
+  // Ranch fund goal (all-time)
   const goalDoc = await userDoc('budgetGoal').get();
   const goal = goalDoc.exists ? goalDoc.data() : { target: 50000, label: 'Ranch Fund' };
   const totalSaved = allEntries.filter(e => e.category === 'Savings').reduce((s, e) => s + (e.amount || 0), 0);
@@ -33,6 +38,13 @@ async function renderBudget() {
         <button class="${budgetPeriod === 'year' ? 'active' : ''}" data-period="year">Year</button>
       </div>
 
+      <!-- Available money — the big number -->
+      <div class="card" style="text-align:center;padding:20px;">
+        <div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:1px;color:var(--text-secondary);">Available to Spend</div>
+        <div style="font-size:2.2rem;font-weight:700;color:${available >= 0 ? 'var(--success)' : 'var(--danger)'};">$${Math.abs(available).toFixed(2)}</div>
+        ${available < 0 ? '<div style="font-size:0.75rem;color:var(--danger);">⚠ Over budget</div>' : ''}
+      </div>
+
       <div class="summary-cards">
         <div class="summary-card">
           <div class="summary-card-label">Income</div>
@@ -41,16 +53,24 @@ async function renderBudget() {
         <div class="summary-card">
           <div class="summary-card-label">Tithing</div>
           <div class="summary-card-value">$${tithing.toFixed(2)}</div>
-          ${parseFloat(tithePct) < 10 && income > 0 ? `<div class="tithe-flag">⚠ ${tithePct}% of income</div>` : ''}
+          ${parseFloat(tithePct) < 10 && income > 0 ? `<div class="tithe-flag">⚠ ${tithePct}%</div>` : income > 0 ? `<div style="font-size:0.65rem;color:var(--success);">✓ ${tithePct}%</div>` : ''}
         </div>
         <div class="summary-card">
-          <div class="summary-card-label">Expenses</div>
-          <div class="summary-card-value expense">$${expenses.toFixed(2)}</div>
+          <div class="summary-card-label">Spent</div>
+          <div class="summary-card-value expense">$${spent.toFixed(2)}</div>
         </div>
         <div class="summary-card">
           <div class="summary-card-label">Saved</div>
-          <div class="summary-card-value saved">$${saved.toFixed(2)}</div>
+          <div class="summary-card-value saved">$${savedExplicit.toFixed(2)}</div>
         </div>
+      </div>
+
+      <div class="card" style="font-size:0.8rem;color:var(--text-secondary);padding:10px 14px;">
+        💡 <strong>$${income.toFixed(2)}</strong> earned
+        − <strong>$${tithing.toFixed(2)}</strong> tithing
+        − <strong>$${spent.toFixed(2)}</strong> spent
+        − <strong>$${savedExplicit.toFixed(2)}</strong> saved
+        = <strong style="color:${available >= 0 ? 'var(--success)' : 'var(--danger)'}">$${available.toFixed(2)}</strong> left
       </div>
 
       <div class="card savings-goal">
@@ -59,7 +79,7 @@ async function renderBudget() {
           <div class="progress-fill" style="width:${goalPct}%"></div>
         </div>
         <div class="progress-label">
-          <span>$${totalSaved.toFixed(0)}</span>
+          <span>$${totalSaved.toLocaleString()}</span>
           <span>$${goal.target.toLocaleString()}</span>
         </div>
       </div>
@@ -89,7 +109,8 @@ async function renderBudget() {
       </div>
 
       <div class="section-title">Quick Add</div>
-      <button class="btn-secondary" id="paycheck-btn" style="margin-bottom:12px;width:100%;">💰 Add ${escapeHtml(settings.jobTitle || 'Work')} Paycheck</button>
+      <button class="btn-secondary" id="paycheck-btn" style="margin-bottom:8px;width:100%;">💰 Add ${escapeHtml(settings.jobTitle || 'Work')} Paycheck</button>
+      <button class="btn-secondary" id="tithe-btn" style="margin-bottom:12px;width:100%;">🙏 Add Tithing</button>
 
       <div class="card budget-entry-form">
         <div class="card-title">Manual Entry</div>
@@ -102,16 +123,16 @@ async function renderBudget() {
         </div>
         <div class="form-group">
           <label>Amount ($)</label>
-          <input type="number" id="entry-amount" step="0.01" placeholder="0.00">
+          <input type="number" id="entry-amount" step="0.01" placeholder="0.00" inputmode="decimal">
         </div>
         <div class="form-group">
           <label>Category</label>
           <select id="entry-category">
-            <option>Tithing</option>
             <option>Food</option>
             <option>Gas/Transport</option>
             <option>School</option>
             <option>Savings</option>
+            <option>Tithing</option>
             <option>Other</option>
           </select>
         </div>
@@ -184,6 +205,23 @@ async function renderBudget() {
       amount: parseFloat(amount),
       category: jobName + ' Paycheck',
       description: jobName + ' paycheck',
+      date: todayKey(),
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    renderBudget();
+  });
+
+  // Tithing quick-add
+  document.getElementById('tithe-btn').addEventListener('click', async () => {
+    const lastIncome = filtered.filter(e => e.type === 'income').reduce((s, e) => s + (e.amount || 0), 0);
+    const suggestedTithe = (lastIncome * 0.1).toFixed(2);
+    const amount = prompt(`Tithing amount ($):\n\n10% of period income = $${suggestedTithe}`);
+    if (!amount || isNaN(parseFloat(amount))) return;
+    await userCollection('budgetEntries').add({
+      type: 'expense',
+      amount: parseFloat(amount),
+      category: 'Tithing',
+      description: 'Tithing',
       date: todayKey(),
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });

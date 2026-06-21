@@ -93,7 +93,16 @@ async function renderSchedule() {
     renderSchedule();
   });
 
-  // Delete blocks
+  // Click existing blocks to edit
+  tabContent.querySelectorAll('[data-block-id]').forEach(el => {
+    el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const block = timedBlocks.find(b => b.id === el.dataset.blockId);
+      if (block) showBlockModal(selectedKey, block.startHour, block);
+    });
+  });
+
+  // Delete all-day blocks
   tabContent.querySelectorAll('[data-delete-block]').forEach(btn => {
     btn.addEventListener('click', async () => {
       const id = btn.dataset.deleteBlock;
@@ -113,7 +122,7 @@ async function renderSchedule() {
   tabContent.querySelectorAll('.timeline-slot').forEach(slot => {
     let holdTimer;
     const start = () => {
-      holdTimer = setTimeout(() => addTimelineBlock(selectedKey, parseInt(slot.dataset.hour)).then(() => renderSchedule()), 500);
+      holdTimer = setTimeout(() => showBlockModal(selectedKey, parseInt(slot.dataset.hour)), 500);
     };
     const cancel = () => clearTimeout(holdTimer);
     slot.addEventListener('mousedown', start);

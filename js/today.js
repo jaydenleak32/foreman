@@ -151,6 +151,15 @@ async function _renderToday() {
     });
   });
 
+  // Click existing blocks to edit
+  tabContent.querySelectorAll('[data-block-id]').forEach(el => {
+    el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const block = timedBlocks.find(b => b.id === el.dataset.blockId);
+      if (block) showBlockModal(key, block.startHour, block);
+    });
+  });
+
   // Timeline block add (click on empty slot)
   tabContent.querySelectorAll('.timeline-slot').forEach(slot => {
     let holdTimer;
@@ -169,17 +178,23 @@ function buildTimeline(startHour, endHour, recurring, custom, dateStr) {
   let html = '';
   for (let h = startHour; h < endHour; h++) {
     const recBlock = recurring.find(b => h >= b.start && h < b.end);
-    const customBlock = custom.find(b => b.startHour === h);
+    const customBlock = custom.find(b => h >= b.startHour && h < b.endHour);
+    const isBlockStart = customBlock && Math.floor(customBlock.startHour) === h;
 
     html += `<div class="timeline-hour">
       <div class="timeline-label">${formatTime(h)}</div>
       <div class="timeline-slot" data-hour="${h}">`;
 
-    if (customBlock) {
-      html += `<div class="timeline-block">
+    if (isBlockStart) {
+      const spans = Math.ceil(customBlock.endHour - customBlock.startHour);
+      const people = customBlock.people && customBlock.people.length ? customBlock.people.join(', ') : '';
+      html += `<div class="timeline-block" data-block-id="${customBlock.id}" style="min-height:${spans * 44 - 8}px;cursor:pointer;">
         <span class="timeline-block-title">${escapeHtml(customBlock.title)}</span>
         ${customBlock.note ? `<div class="timeline-block-note">${escapeHtml(customBlock.note)}</div>` : ''}
+        ${people ? `<div class="timeline-block-note">👤 ${escapeHtml(people)}</div>` : ''}
       </div>`;
+    } else if (customBlock) {
+      // Continuation of a multi-hour block — leave empty
     } else if (recBlock && h === recBlock.start) {
       html += `<div class="timeline-block recurring">
         <span class="timeline-block-title">${escapeHtml(recBlock.title)}</span>
@@ -191,20 +206,106 @@ function buildTimeline(startHour, endHour, recurring, custom, dateStr) {
   return html;
 }
 
-async function addTimelineBlock(dateStr, hour) {
-  const title = prompt('Block title:');
-  if (!title) return;
-  const note = prompt('Note (optional):') || '';
-  await userCollection('scheduleBlocks').add({
-    date: dateStr,
-    startHour: hour,
-    endHour: hour + 1,
-    title,
-    note,
-    allDay: false
+function addTimelineBlock(dateStr, hour, existingBlock) {
+  showBlockModal(dateStr, hour, existingBlock);
+}
+
+function showBlockModal(dateStr, hour, block) {
+  const isEdit = !!block;
+  const modal = document.getElementById('settings-modal');
+  const body = document.getElementById('settings-body');
+  document.querySelector('#settings-modal .modal-header h2').textContent = isEdit ? 'Edit Block' : 'Add Block';
+
+  const startH = isEdit ? block.startHour : hour;
+  const endH = isEdit ? block.endHour : Math.min(hour + 1, 24);
+  const durOptions = [0.5, 1, 1.5, 2, 3, 4, 6, 8];
+  const duration = endH - startH;
+
+  body.innerHTML = `
+    <div class="form-group">
+      <label>Title</label>
+      <input type="text" id="block-title" value="${isEdit ? escapeHtml(block.title) : ''}" placeholder="What's this block for?">
+    </div>
+    <div class="form-group">
+      <label>Start Time</label>
+      <select id="block-start">
+        ${Array.from({length: 38}, (_, i) => {
+          const h = 5 + i * 0.5;
+          const hr = Math.floor(h);
+          const min = h % 1 ? '30' : '00';
+          const label = formatTime(hr) + (min === '30' ? ':30' : '');
+          return `<option value="${h}" ${h === startH ? 'selected' : ''}>${label}</option>`;
+        }).join('')}
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Duration</label>
+      <div class="toggle-group" style="flex-wrap:wrap;">
+        ${durOptions.map(d => `<button data-dur="${d}" class="${d === duration ? 'active' : ''}" style="min-width:50px;">${d < 1 ? '30m' : d + 'h'}</button>`).join('')}
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Notes</label>
+      <textarea id="block-notes" placeholder="Details...">${isEdit ? escapeHtml(block.note || '') : ''}</textarea>
+    </div>
+    <div class="form-group">
+      <label>People (comma separated)</label>
+      <input type="text" id="block-people" value="${isEdit && block.people ? escapeHtml(block.people.join(', ')) : ''}" placeholder="Who's involved?">
+    </div>
+    <button class="btn-primary" id="block-save" style="margin-bottom:8px;">Save</button>
+    ${isEdit ? '<button class="btn-primary btn-danger" id="block-delete">Delete Block</button>' : ''}
+  `;
+
+  let selectedDur = duration;
+  body.querySelectorAll('[data-dur]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      selectedDur = parseFloat(btn.dataset.dur);
+      body.querySelectorAll('[data-dur]').forEach(b => b.classList.toggle('active', b.dataset.dur == selectedDur));
+    });
   });
-  if (currentTab === 'today') renderToday();
-  else renderSchedule();
+
+  modal.classList.remove('hidden');
+
+  document.getElementById('block-save').addEventListener('click', async () => {
+    const title = document.getElementById('block-title').value.trim();
+    if (!title) return;
+    const start = parseFloat(document.getElementById('block-start').value);
+    const peopleStr = document.getElementById('block-people').value.trim();
+    const data = {
+      date: dateStr,
+      startHour: start,
+      endHour: start + selectedDur,
+      title,
+      note: document.getElementById('block-notes').value.trim(),
+      people: peopleStr ? peopleStr.split(',').map(p => p.trim()).filter(Boolean) : [],
+      allDay: false
+    };
+    if (isEdit) {
+      await userCollection('scheduleBlocks').doc(block.id).update(data);
+    } else {
+      await userCollection('scheduleBlocks').add(data);
+    }
+    modal.classList.add('hidden');
+    if (currentTab === 'today') renderToday();
+    else renderSchedule();
+  });
+
+  if (isEdit) {
+    document.getElementById('block-delete').addEventListener('click', async () => {
+      if (settings.confirmBeforeDelete && !confirm('Delete this block?')) return;
+      const blockData = { ...block };
+      delete blockData.id;
+      await userCollection('scheduleBlocks').doc(block.id).delete();
+      showUndo('Block deleted', async () => {
+        await userCollection('scheduleBlocks').add(blockData);
+        if (currentTab === 'today') renderToday();
+        else renderSchedule();
+      });
+      modal.classList.add('hidden');
+      if (currentTab === 'today') renderToday();
+      else renderSchedule();
+    });
+  }
 }
 
 async function getStreaks(habitConfig) {

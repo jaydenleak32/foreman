@@ -137,10 +137,26 @@ async function renderInbox() {
     );
   });
 
-  // Project next action save
+  // Project next action — save on change, Enter creates an actual action
   tabContent.querySelectorAll('.project-next-input').forEach(input => {
     input.addEventListener('change', () => {
       userCollection('projects').doc(input.dataset.projectId).update({ nextAction: input.value });
+    });
+    input.addEventListener('keydown', async (e) => {
+      if (e.key === 'Enter' && input.value.trim()) {
+        const text = input.value.trim();
+        const context = prompt(`Context for "${text}"?\n\n${GTD_CONTEXTS.join(', ')}`) || '@Anywhere';
+        await userCollection('actions').add({
+          text,
+          context: GTD_CONTEXTS.includes(context) ? context : '@Anywhere',
+          completed: false,
+          projectId: input.dataset.projectId,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        input.value = '';
+        await userCollection('projects').doc(input.dataset.projectId).update({ nextAction: '' });
+        renderInbox();
+      }
     });
   });
 
@@ -211,8 +227,9 @@ function renderProjectsSection(projects) {
       <div class="project-card">
         <div class="project-title">${escapeHtml(p.title)}</div>
         <div class="project-next-action">
-          <input type="text" class="project-next-input" data-project-id="${p.id}" value="${escapeHtml(p.nextAction || '')}" placeholder="Next action...">
+          <input type="text" class="project-next-input" data-project-id="${p.id}" value="${escapeHtml(p.nextAction || '')}" placeholder="Type next action, press Enter to create it...">
         </div>
+        <div style="font-size:0.7rem;color:var(--text-muted);margin-top:4px;">↵ Enter = create as action</div>
       </div>
     `).join('')}
     <button class="btn-secondary" id="add-project-btn" style="margin-top:8px;">+ Add Project</button>

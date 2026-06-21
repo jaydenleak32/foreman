@@ -101,6 +101,11 @@ select {
   outline: none;
 }
 
+input[type="date"] {
+  text-align: left;
+  -webkit-appearance: none;
+}
+
 .hidden { display: none !important; }
 
 /* === Auth Screen === */
@@ -215,7 +220,8 @@ select {
   align-items: center;
   justify-content: space-between;
   padding: 10px 16px;
-  height: var(--header-h);
+  padding-top: calc(env(safe-area-inset-top, 0px) + 10px);
+  height: calc(var(--header-h) + env(safe-area-inset-top, 0px));
   border-bottom: 1px solid var(--border);
   background: var(--bg);
   position: sticky;
@@ -300,7 +306,7 @@ select {
   overflow-y: auto;
   overflow-x: hidden;
   padding: 16px;
-  padding-bottom: calc(var(--tab-h) + 16px);
+  padding-bottom: calc(var(--tab-h) + env(safe-area-inset-bottom, 0px) + 20px);
   -webkit-overflow-scrolling: touch;
 }
 
@@ -309,7 +315,7 @@ select {
   display: flex;
   background: var(--bg-card);
   border-top: 1px solid var(--border);
-  height: var(--tab-h);
+  height: calc(var(--tab-h) + env(safe-area-inset-bottom, 0px));
   position: fixed;
   bottom: 0;
   left: 50%;
@@ -317,7 +323,7 @@ select {
   width: 100%;
   max-width: var(--max-w);
   z-index: 100;
-  padding-bottom: env(safe-area-inset-bottom, 0);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 .tab-btn {

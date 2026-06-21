@@ -358,44 +358,95 @@ function showPMGBlockModal(dateStr, startHour, block) {
   function setupClockDrag(face, hand, t, cx, cy, radius) {
     let dragging = false;
 
-    function getAngleFromEvent(e) {
+    function getAngle(e) {
       const rect = face.getBoundingClientRect();
-      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-      const dx = clientX - rect.left - cx;
-      const dy = clientY - rect.top - cy;
-      let angle = Math.atan2(dy, dx) * 180 / Math.PI + 90;
-      if (angle < 0) angle += 360;
-      return angle;
+      const px = (e.clientX || (e.touches && e.touches[0].clientX) || 0) - rect.left - cx;
+      const py = (e.clientY || (e.touches && e.touches[0].clientY) || 0) - rect.top - cy;
+      let a = Math.atan2(py, px) * 180 / Math.PI + 90;
+      if (a < 0) a += 360;
+      return a;
     }
 
-    function setValue(angle) {
+    function updateFromAngle(angle, commit) {
+      let val;
       if (clockMode === 'hour') {
-        let h = Math.round(angle / 30);
-        if (h === 0) h = 12;
-        if (h > 12) h = 12;
-        timeState[activePicker].h = h;
+        val = Math.round(angle / 30);
+        if (val <= 0) val = 12;
+        if (val > 12) val = 12;
+        timeState[activePicker].h = val;
       } else {
-        let m = Math.round(angle / 6);
-        if (m >= 60) m = 0;
-        m = Math.round(m / 5) * 5;
-        if (m >= 60) m = 0;
-        timeState[activePicker].m = m;
+        val = Math.round(angle / 6);
+        if (val >= 60) val = 0;
+        val = Math.round(val / 5) * 5;
+        if (val >= 60) val = 0;
+        timeState[activePicker].m = val;
       }
-      renderClock();
+
+      // Fast visual update (no full rebuild)
+      const handAngle = clockMode === 'hour' ? val * 30 : (val / 5) * 30;
+      hand.style.transform = `translateX(-1px) rotate(${handAngle}deg)`;
+
+      // Highlight selected number
+      face.querySelectorAll('.clock-number').forEach(n => {
+        n.classList.toggle('selected', parseInt(n.dataset.value) === val);
+      });
+
+      // Update display text
+      const ts = timeState[activePicker];
+      const hEl = document.getElementById('cd-hour');
+      const mEl = document.getElementById('cd-min');
+      if (hEl) hEl.textContent = String(ts.h);
+      if (mEl) mEl.textContent = (ts.m < 10 ? '0' : '') + ts.m;
+
+      if (commit && clockMode === 'hour') {
+        clockMode = 'minute';
+        renderClock();
+      }
     }
 
-    face.onpointerdown = (e) => { dragging = true; face.setPointerCapture(e.pointerId); setValue(getAngleFromEvent(e)); };
-    face.onpointermove = (e) => { if (dragging) setValue(getAngleFromEvent(e)); };
-    face.onpointerup = (e) => {
-      if (dragging) {
-        dragging = false;
-        if (clockMode === 'hour') {
-          clockMode = 'minute';
-          renderClock();
-        }
+    // Touch events for mobile
+    face.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      dragging = true;
+      updateFromAngle(getAngle(e), false);
+    }, { passive: false });
+
+    face.addEventListener('touchmove', (e) => {
+      if (!dragging) return;
+      e.preventDefault();
+      updateFromAngle(getAngle(e), false);
+    }, { passive: false });
+
+    face.addEventListener('touchend', (e) => {
+      if (!dragging) return;
+      dragging = false;
+      if (clockMode === 'hour') {
+        clockMode = 'minute';
+        renderClock();
       }
-    };
+    });
+
+    // Mouse/pointer events for desktop
+    face.addEventListener('pointerdown', (e) => {
+      if (e.pointerType === 'touch') return; // handled by touch events
+      dragging = true;
+      face.setPointerCapture(e.pointerId);
+      updateFromAngle(getAngle(e), false);
+    });
+
+    face.addEventListener('pointermove', (e) => {
+      if (!dragging || e.pointerType === 'touch') return;
+      updateFromAngle(getAngle(e), false);
+    });
+
+    face.addEventListener('pointerup', (e) => {
+      if (!dragging || e.pointerType === 'touch') return;
+      dragging = false;
+      if (clockMode === 'hour') {
+        clockMode = 'minute';
+        renderClock();
+      }
+    });
   }
 
   // Start/End tabs

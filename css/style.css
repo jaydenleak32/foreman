@@ -806,6 +806,69 @@ input[type="date"] {
   margin-bottom: 8px;
 }
 
+.sched-month-btn {
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  transition: background var(--transition);
+}
+
+.sched-month-btn:active { background: var(--bg-hover); }
+
+.sched-nav-btn { font-size: 1.4rem; padding: 4px 12px; }
+
+.sched-toolbar {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+/* Month Grid */
+.month-grid-container {
+  margin-bottom: 12px;
+  animation: fadeInUp 0.2s ease;
+}
+
+.month-grid-header {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+  letter-spacing: 0.5px;
+}
+
+.month-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.month-cell {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.month-cell.empty { cursor: default; }
+.month-cell:not(.empty):active { background: var(--bg-hover); }
+.month-cell.today { color: var(--accent); font-weight: 700; }
+.month-cell.active { background: var(--accent); color: #fff; font-weight: 700; }
+
+/* Swipe container */
+.sched-swipe-container {
+  position: relative;
+  overflow: hidden;
+}
+
 .sched-month {
   font-size: 1rem;
   font-weight: 600;
@@ -1152,6 +1215,69 @@ input[type="date"] {
 .cat-chip.active {
   border-color: var(--chip-color);
   font-weight: 600;
+}
+
+/* Routine badge on timeline blocks */
+.pmg-routine-badge {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  font-size: 0.65rem;
+  opacity: 0.5;
+}
+
+/* Routine cards in manager view */
+.routine-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px;
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  transition: background var(--transition);
+}
+
+.routine-card:active { background: var(--bg-hover); }
+.routine-card-title { font-weight: 600; font-size: 0.9rem; }
+.routine-card-time { font-size: 0.8rem; color: var(--text-secondary); margin-top: 2px; }
+.routine-card-repeat { font-size: 0.7rem; color: var(--text-muted); margin-top: 2px; }
+
+.routine-card-cat {
+  padding: 3px 8px;
+  border-radius: 10px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+/* Day picker for routine repeat */
+.day-picker {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+}
+
+.day-pick-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+
+.day-pick-btn.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
 }
 
 /* === INBOX TAB === */

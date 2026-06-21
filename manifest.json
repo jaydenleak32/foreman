@@ -2,7 +2,7 @@
   "name": "Foreman",
   "short_name": "Foreman",
   "description": "GTD productivity system",
-  "start_url": "/",
+  "start_url": "./",
   "display": "standalone",
   "background_color": "#1a1a1a",
   "theme_color": "#1a1a1a",

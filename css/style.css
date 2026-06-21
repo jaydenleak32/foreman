@@ -1524,6 +1524,65 @@ input[type="date"] {
 }
 
 /* === REVIEW TAB === */
+.review-cta {
+  width: 100%;
+  padding: 16px;
+  font-size: 1.1rem;
+  border-radius: var(--radius);
+  animation: fadeInUp 0.3s ease;
+}
+
+.review-indicators-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.review-ind-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 4px;
+  text-align: center;
+}
+
+.review-ind-icon { font-size: 1.1rem; }
+
+.review-ind-value {
+  font-size: 1rem;
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+.review-ind-label {
+  font-size: 0.55rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.review-streak-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.review-streak-row:last-child { border-bottom: none; }
+
+.review-streak-name {
+  font-size: 0.85rem;
+}
+
+.review-streak-val {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
 .habit-grid-container { margin-bottom: 16px; }
 
 .habit-grid-title {

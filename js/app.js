@@ -306,6 +306,59 @@ async function globalSearch(query) {
   return results.slice(0, 10);
 }
 
+// === Number Pad ===
+function showNumpad(title, hint) {
+  return new Promise((resolve) => {
+    const modal = document.getElementById('numpad-modal');
+    const display = document.getElementById('numpad-display');
+    document.getElementById('numpad-title').textContent = title || 'Enter Amount';
+    document.getElementById('numpad-hint').textContent = hint || '';
+    let value = '';
+    display.textContent = '$0';
+    modal.classList.remove('hidden');
+
+    function updateDisplay() {
+      display.textContent = '$' + (value || '0');
+    }
+
+    function onKey(e) {
+      const btn = e.target.closest('[data-key]');
+      if (!btn) return;
+      const key = btn.dataset.key;
+      if (key === 'del') {
+        value = value.slice(0, -1);
+      } else if (key === '.') {
+        if (!value.includes('.')) value += value ? '.' : '0.';
+      } else {
+        if (value.includes('.') && value.split('.')[1].length >= 2) return;
+        value += key;
+      }
+      updateDisplay();
+    }
+
+    function cleanup() {
+      document.querySelector('.numpad-grid').removeEventListener('click', onKey);
+      document.getElementById('numpad-confirm').removeEventListener('click', onConfirm);
+      document.getElementById('numpad-close').removeEventListener('click', onCancel);
+      modal.classList.add('hidden');
+    }
+
+    function onConfirm() {
+      cleanup();
+      resolve(parseFloat(value) || 0);
+    }
+
+    function onCancel() {
+      cleanup();
+      resolve(0);
+    }
+
+    document.querySelector('.numpad-grid').addEventListener('click', onKey);
+    document.getElementById('numpad-confirm').addEventListener('click', onConfirm);
+    document.getElementById('numpad-close').addEventListener('click', onCancel);
+  });
+}
+
 // === Undo Toast ===
 let undoTimeout = null;
 let undoAction = null;

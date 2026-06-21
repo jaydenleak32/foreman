@@ -214,11 +214,11 @@ async function renderBudget(useCache) {
   // Paycheck quick-add
   document.getElementById('paycheck-btn').addEventListener('click', async () => {
     const jobName = settings.jobTitle || 'Work';
-    const amount = prompt('Paycheck amount ($):');
-    if (!amount || isNaN(parseFloat(amount))) return;
+    const amount = await showNumpad(jobName + ' Paycheck', 'Enter paycheck amount');
+    if (!amount) return;
     await userCollection('budgetEntries').add({
       type: 'income',
-      amount: parseFloat(amount),
+      amount,
       category: jobName + ' Paycheck',
       description: jobName + ' paycheck',
       date: todayKey(),
@@ -231,11 +231,11 @@ async function renderBudget(useCache) {
   document.getElementById('tithe-btn').addEventListener('click', async () => {
     const lastIncome = filtered.filter(e => e.type === 'income').reduce((s, e) => s + (e.amount || 0), 0);
     const suggestedTithe = (lastIncome * 0.1).toFixed(2);
-    const amount = prompt(`Tithing amount ($):\n\n10% of period income = $${suggestedTithe}`);
-    if (!amount || isNaN(parseFloat(amount))) return;
+    const amount = await showNumpad('Tithing', '10% of period income = $' + suggestedTithe);
+    if (!amount) return;
     await userCollection('budgetEntries').add({
       type: 'expense',
-      amount: parseFloat(amount),
+      amount,
       category: 'Tithing',
       description: 'Tithing',
       date: todayKey(),

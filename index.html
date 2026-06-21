@@ -102,6 +102,35 @@
     </div>
   </div>
 
+  <!-- Number Pad Modal -->
+  <div id="numpad-modal" class="modal hidden">
+    <div class="modal-content numpad-content">
+      <div class="modal-header">
+        <h2 id="numpad-title">Enter Amount</h2>
+        <button class="modal-close" id="numpad-close">✕</button>
+      </div>
+      <div class="numpad-body">
+        <div id="numpad-hint" class="numpad-hint"></div>
+        <div class="numpad-display" id="numpad-display">$0</div>
+        <div class="numpad-grid">
+          <button class="numpad-key" data-key="1">1</button>
+          <button class="numpad-key" data-key="2">2</button>
+          <button class="numpad-key" data-key="3">3</button>
+          <button class="numpad-key" data-key="4">4</button>
+          <button class="numpad-key" data-key="5">5</button>
+          <button class="numpad-key" data-key="6">6</button>
+          <button class="numpad-key" data-key="7">7</button>
+          <button class="numpad-key" data-key="8">8</button>
+          <button class="numpad-key" data-key="9">9</button>
+          <button class="numpad-key" data-key=".">.</button>
+          <button class="numpad-key" data-key="0">0</button>
+          <button class="numpad-key numpad-del" data-key="del">⌫</button>
+        </div>
+        <button class="btn-primary" id="numpad-confirm">Confirm</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Undo Toast -->
   <div id="undo-toast" class="undo-toast hidden">
     <span id="undo-text"></span>

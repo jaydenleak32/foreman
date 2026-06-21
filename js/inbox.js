@@ -153,16 +153,16 @@ async function renderInbox(useCache) {
     input.addEventListener('keydown', async (e) => {
       if (e.key === 'Enter' && input.value.trim()) {
         const text = input.value.trim();
-        const context = prompt(`Context for "${text}"?\n\n${GTD_CONTEXTS.join(', ')}`) || '@Anywhere';
         await userCollection('actions').add({
           text,
-          context: GTD_CONTEXTS.includes(context) ? context : '@Anywhere',
+          context: '@Anywhere',
           completed: false,
           projectId: input.dataset.projectId,
           createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
         input.value = '';
         await userCollection('projects').doc(input.dataset.projectId).update({ nextAction: '' });
+        _inboxCache = null;
         renderInbox();
       }
     });
@@ -269,10 +269,9 @@ function renderListsSection(waiting, someday) {
 
 async function processInboxItem(type, id, text) {
   if (type === 'action') {
-    const context = prompt(`Context for "${text}"?\n\nOptions: ${GTD_CONTEXTS.join(', ')}`) || '@Anywhere';
     await userCollection('actions').add({
       text,
-      context: GTD_CONTEXTS.includes(context) ? context : '@Anywhere',
+      context: '@Anywhere',
       completed: false,
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
@@ -285,11 +284,8 @@ async function processInboxItem(type, id, text) {
       order: snap.size
     });
   } else if (type === 'waiting') {
-    const who = prompt('Waiting on who?') || '';
-    await userCollection('waiting').add({
-      text: `${text}${who ? ' (from ' + who + ')' : ''}`,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
+    showWaitingInput(text, id);
+    return;
   } else if (type === 'someday') {
     await userCollection('someday').add({
       text,
@@ -297,10 +293,42 @@ async function processInboxItem(type, id, text) {
     });
   }
 
-  if (type !== 'trash') {
-    // Keep the inbox item data for undo
-  }
   await userCollection('inbox').doc(id).delete();
   _inboxCache = null;
   renderInbox();
+}
+
+function showWaitingInput(text, inboxId) {
+  const modal = document.getElementById('settings-modal');
+  const body = document.getElementById('settings-body');
+  document.querySelector('#settings-modal .modal-header h2').textContent = 'Waiting For';
+
+  body.innerHTML = `
+    <div style="font-size:0.9rem;margin-bottom:12px;color:var(--text-secondary);">"${escapeHtml(text)}"</div>
+    <div class="form-group">
+      <label>Who are you waiting on? (optional)</label>
+      <input type="text" id="waiting-who" placeholder="e.g. Manager, Bishop, Amazon...">
+    </div>
+    <button class="btn-primary" id="waiting-save">Save</button>
+  `;
+
+  modal.classList.remove('hidden');
+  document.getElementById('waiting-who').focus();
+
+  async function save() {
+    const who = document.getElementById('waiting-who').value.trim();
+    await userCollection('waiting').add({
+      text: who ? text + ' (from ' + who + ')' : text,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    await userCollection('inbox').doc(inboxId).delete();
+    modal.classList.add('hidden');
+    _inboxCache = null;
+    renderInbox();
+  }
+
+  document.getElementById('waiting-save').addEventListener('click', save);
+  document.getElementById('waiting-who').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') save();
+  });
 }

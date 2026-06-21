@@ -602,6 +602,59 @@ input[type="date"] {
 
 .modal-body { padding: 16px; }
 
+/* === Number Pad Modal === */
+.numpad-content {
+  max-width: 340px;
+  margin: 0 auto;
+}
+
+.numpad-body {
+  padding: 16px;
+  text-align: center;
+}
+
+.numpad-hint {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+  min-height: 1.2em;
+}
+
+.numpad-display {
+  font-size: 2.4rem;
+  font-weight: 700;
+  color: var(--accent);
+  padding: 12px;
+  margin-bottom: 16px;
+  border-bottom: 2px solid var(--border);
+}
+
+.numpad-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.numpad-key {
+  height: 52px;
+  border-radius: var(--radius);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  font-size: 1.3rem;
+  font-weight: 600;
+  transition: background 0.1s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.numpad-key:active {
+  background: var(--accent-bg);
+}
+
+.numpad-del {
+  font-size: 1.1rem;
+}
+
 /* === Undo Toast === */
 .undo-toast {
   position: fixed;

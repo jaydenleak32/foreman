@@ -800,21 +800,25 @@ input[type="date"] {
 /* === SCHEDULE TAB (PMG-style) === */
 .sched-sticky-header {
   background: var(--bg);
-  margin: -16px -16px 0 -16px;
-  padding: 4px 16px 6px 16px;
+  margin: 0 -16px 0 -16px;
+  padding: 8px 16px 6px 16px;
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
   z-index: 30;
   position: relative;
 }
 
+.tab-content:has(.sched-sticky-header) {
+  padding-top: 0;
+}
+
 .sched-scroll-body {
   flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow: hidden auto;
   padding: 12px 0;
   position: relative;
   z-index: 1;
+  isolation: isolate;
 }
 
 .sched-header {
@@ -1024,7 +1028,7 @@ input[type="date"] {
   right: 0;
   height: 2px;
   background: var(--danger);
-  z-index: 20;
+  z-index: 5;
   pointer-events: none;
 }
 

@@ -266,26 +266,25 @@ document.addEventListener('click', (e) => {
 
 async function globalSearch(query) {
   const results = [];
-  const actionsSnap = await userCollection('actions').get();
+  const [actionsSnap, projectsSnap, peopleSnap] = await Promise.all([
+    userCollection('actions').get(),
+    userCollection('projects').get(),
+    userCollection('people').get()
+  ]);
   actionsSnap.forEach(doc => {
     const d = doc.data();
-    if (d.text && d.text.toLowerCase().includes(query)) {
+    if (d.text && d.text.toLowerCase().includes(query))
       results.push({ type: 'action', name: d.text, id: doc.id });
-    }
   });
-  const projectsSnap = await userCollection('projects').get();
   projectsSnap.forEach(doc => {
     const d = doc.data();
-    if (d.title && d.title.toLowerCase().includes(query)) {
+    if (d.title && d.title.toLowerCase().includes(query))
       results.push({ type: 'project', name: d.title, id: doc.id });
-    }
   });
-  const peopleSnap = await userCollection('people').get();
   peopleSnap.forEach(doc => {
     const d = doc.data();
-    if (d.name && d.name.toLowerCase().includes(query)) {
+    if (d.name && d.name.toLowerCase().includes(query))
       results.push({ type: 'person', name: d.name, id: doc.id });
-    }
   });
   return results.slice(0, 10);
 }
@@ -379,21 +378,16 @@ function getGreeting() {
   return 'Good evening';
 }
 
+var _escDiv = document.createElement('div');
 function escapeHtml(text) {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
+  _escDiv.textContent = text;
+  return _escDiv.innerHTML;
 }
 
 // === Init ===
 async function initApp() {
-  const tab = settings.defaultTab || 'today';
-  switchTab(tab);
-  // If first render fails (Firestore not ready), retry after a short delay
-  await new Promise(r => setTimeout(r, 500));
-  if (tabContent.innerHTML === '' || tabContent.innerHTML.includes('Couldn’t load')) {
-    switchTab(tab);
-  }
+  const tab = settings.defaultTab || ‘today’;
+  await switchTab(tab);
 }
 
 // === Settings Button ===

@@ -13,24 +13,23 @@ const DEFAULT_PROJECTS = [
 ];
 
 async function renderInbox() {
-  const inboxSnap = await userCollection('inbox').orderBy('createdAt', 'desc').get();
+  const [inboxSnap, actionsSnap, waitingSnap, somedaySnap, projectsSnap] = await Promise.all([
+    userCollection('inbox').orderBy('createdAt', 'desc').get(),
+    userCollection('actions').orderBy('createdAt', 'desc').get(),
+    userCollection('waiting').orderBy('createdAt', 'desc').get(),
+    userCollection('someday').orderBy('createdAt', 'desc').get(),
+    userCollection('projects').orderBy('order').get()
+  ]);
+
   const inboxItems = [];
   inboxSnap.forEach(d => inboxItems.push({ id: d.id, ...d.data() }));
-
-  const actionsSnap = await userCollection('actions').orderBy('createdAt', 'desc').get();
   const actions = [];
   actionsSnap.forEach(d => actions.push({ id: d.id, ...d.data() }));
   const activeActions = actions.filter(a => !a.completed);
-
-  const waitingSnap = await userCollection('waiting').orderBy('createdAt', 'desc').get();
   const waiting = [];
   waitingSnap.forEach(d => waiting.push({ id: d.id, ...d.data() }));
-
-  const somedaySnap = await userCollection('someday').orderBy('createdAt', 'desc').get();
   const someday = [];
   somedaySnap.forEach(d => someday.push({ id: d.id, ...d.data() }));
-
-  let projectsSnap = await userCollection('projects').orderBy('order').get();
   let projects = [];
   projectsSnap.forEach(d => projects.push({ id: d.id, ...d.data() }));
 

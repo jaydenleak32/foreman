@@ -3,26 +3,33 @@
 let budgetPeriod = 'week';
 
 async function renderBudget() {
-  const entriesSnap = await userCollection('budgetEntries').orderBy('date', 'desc').get();
+  const [entriesSnap, goalDoc] = await Promise.all([
+    userCollection('budgetEntries').orderBy('date', 'desc').get(),
+    userDoc('budgetGoal').get()
+  ]);
   const allEntries = [];
   entriesSnap.forEach(d => allEntries.push({ id: d.id, ...d.data() }));
 
   const now = new Date();
   const filtered = filterByPeriod(allEntries, budgetPeriod, now);
 
-  const income = filtered.filter(e => e.type === 'income').reduce((s, e) => s + (e.amount || 0), 0);
-  const tithing = filtered.filter(e => e.category === 'Tithing').reduce((s, e) => s + (e.amount || 0), 0);
-  const expenses = filtered.filter(e => e.type === 'expense').reduce((s, e) => s + (e.amount || 0), 0);
-  const savedExplicit = filtered.filter(e => e.category === 'Savings').reduce((s, e) => s + (e.amount || 0), 0);
-  const spent = filtered.filter(e => e.type === 'expense' && e.category !== 'Savings').reduce((s, e) => s + (e.amount || 0), 0);
+  let income = 0, tithing = 0, expenses = 0, savedExplicit = 0, spent = 0;
+  for (const e of filtered) {
+    const amt = e.amount || 0;
+    if (e.type === 'income') income += amt;
+    if (e.type === 'expense') {
+      expenses += amt;
+      if (e.category === 'Tithing') tithing += amt;
+      else if (e.category === 'Savings') savedExplicit += amt;
+      else spent += amt;
+    }
+  }
 
   // Auto-calculate: available = income - tithing - spending - explicit savings
   const available = income - tithing - spent - savedExplicit;
 
   const tithePct = income > 0 ? ((tithing / income) * 100).toFixed(1) : 0;
 
-  // Ranch fund goal (all-time)
-  const goalDoc = await userDoc('budgetGoal').get();
   const goal = goalDoc.exists ? goalDoc.data() : { target: 50000, label: 'Ranch Fund' };
   const totalSaved = allEntries.filter(e => e.category === 'Savings').reduce((s, e) => s + (e.amount || 0), 0);
   const goalPct = goal.target > 0 ? Math.min(100, (totalSaved / goal.target) * 100) : 0;

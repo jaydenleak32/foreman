@@ -15,43 +15,41 @@ async function renderToday() {
 
 async function _renderToday() {
   const key = todayKey();
-  const doc = await userDoc('days_' + key).get();
-  const data = doc.exists ? doc.data() : {};
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yKey = dateKey(yesterday);
+
+  // Parallel: load today's data, yesterday's data, habit config, and schedule blocks all at once
+  const [todayDoc, yDoc, habitsDoc, blocksSnap] = await Promise.all([
+    userDoc('days_' + key).get(),
+    userDoc('days_' + yKey).get().catch(() => null),
+    userDoc('habitConfig').get(),
+    userCollection('scheduleBlocks').where('date', '==', key).get()
+  ]);
+
+  const data = todayDoc.exists ? todayDoc.data() : {};
+  const yData = yDoc && yDoc.exists ? yDoc.data() : {};
 
   const hour = new Date().getHours();
   const isAM = hour < 12;
   const isPM = hour >= 19;
 
-  // Check for carry-forward
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
-  const yKey = dateKey(yesterday);
-  let carryForward = '';
-  try {
-    const yDoc = await userDoc('days_' + yKey).get();
-    const yData = yDoc.exists ? yDoc.data() : {};
-    carryForward = yData.priority && !yData.priorityDone ? yData.priority : '';
-  } catch (e) {}
-
+  const carryForward = yData.priority && !yData.priorityDone ? yData.priority : '';
   if (!data.priority && carryForward) {
     data.priority = carryForward;
     data.carriedForward = true;
   }
 
-  const habitsDoc = await userDoc('habitConfig').get();
   const habitConfig = habitsDoc.exists ? habitsDoc.data().habits : [
     'Scripture study', 'Prayer (morning & night)', 'Exercise', 'Spanish practice', 'School work', 'Read 30 min'
   ];
 
   const habits = data.habits || {};
-  // Load streaks in background to avoid blocking render
   let streaks = {};
   for (const h of habitConfig) streaks[h] = 0;
 
-  // Get today's schedule blocks
   const dayOfWeek = new Date().getDay();
   const recurring = (settings.recurringBlocks || []).filter(b => b.days.includes(dayOfWeek));
-  const blocksSnap = await userCollection('scheduleBlocks').where('date', '==', key).get();
   const customBlocks = [];
   blocksSnap.forEach(d => customBlocks.push({ id: d.id, ...d.data() }));
 
@@ -217,23 +215,29 @@ function buildTimeline(startHour, endHour, recurring, custom, dateStr) {
 }
 
 async function getStreaks(habitConfig) {
+  // Batch-read last 30 days in parallel instead of 180 sequential reads
+  const days = [];
+  for (let i = 1; i <= 30; i++) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    days.push(dateKey(d));
+  }
+
+  const docs = await Promise.all(
+    days.map(k => userDoc('days_' + k).get().catch(() => null))
+  );
+
+  const dayData = {};
+  docs.forEach((doc, i) => {
+    if (doc && doc.exists) dayData[days[i]] = doc.data().habits || {};
+  });
+
   const streaks = {};
   for (const habit of habitConfig) {
     let streak = 0;
-    const d = new Date();
-    d.setDate(d.getDate() - 1);
-    for (let i = 0; i < 30; i++) {
-      try {
-        const doc = await userDoc('days_' + dateKey(d)).get();
-        if (doc.exists && doc.data().habits && doc.data().habits[habit]) {
-          streak++;
-          d.setDate(d.getDate() - 1);
-        } else {
-          break;
-        }
-      } catch (e) {
-        break;
-      }
+    for (const key of days) {
+      if (dayData[key] && dayData[key][habit]) streak++;
+      else break;
     }
     streaks[habit] = streak;
   }

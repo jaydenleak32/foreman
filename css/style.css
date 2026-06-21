@@ -699,15 +699,45 @@ input[type="date"] {
 
 .priority-input:focus { border-color: var(--accent); border-style: solid; }
 
-.planning-prompt {
-  background: var(--accent-bg);
+/* Up Next */
+.upnext-item {
+  padding: 10px 12px;
   border-left: 3px solid var(--accent);
-  padding: 12px;
+  margin-bottom: 6px;
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-  margin-bottom: 12px;
-  font-size: 0.85rem;
+  background: var(--bg-input);
+  transition: background var(--transition);
+}
+
+.upnext-current {
+  background: var(--accent-bg);
+}
+
+.upnext-time {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.upnext-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.upnext-routine {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.upnext-people {
+  font-size: 0.7rem;
   color: var(--text-secondary);
-  font-style: italic;
+  margin-top: 2px;
+}
+
+.today-top {
+  margin-bottom: 12px;
 }
 
 .people-autocomplete {

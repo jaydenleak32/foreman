@@ -157,7 +157,7 @@ function applyTheme(theme) {
 
 // === Firestore Helpers ===
 function userDoc(path) {
-  return db.collection('users').doc(currentUser.uid).collection('data').doc(path.replace(/\//g, '_'));
+  return db.collection('users').doc(currentUser.uid).collection('data').doc(path);
 }
 
 function userCollection(path) {
@@ -166,11 +166,19 @@ function userCollection(path) {
 
 function dateKey(date) {
   const d = date || new Date();
-  return d.toISOString().split('T')[0];
+  return d.getFullYear() + '-' +
+    String(d.getMonth() + 1).padStart(2, '0') + '-' +
+    String(d.getDate()).padStart(2, '0');
 }
 
+var _todayCache = '';
+var _todayCacheTs = 0;
 function todayKey() {
-  return dateKey(new Date());
+  var now = Date.now();
+  if (now - _todayCacheTs < 60000) return _todayCache;
+  _todayCacheTs = now;
+  _todayCache = dateKey(new Date());
+  return _todayCache;
 }
 
 // === Tab Navigation ===

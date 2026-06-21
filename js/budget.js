@@ -277,27 +277,33 @@ function filterByPeriod(entries, period, now) {
 }
 
 function buildChartData(entries, weeks) {
-  const data = [];
   const now = new Date();
+  const buckets = [];
   for (let w = weeks - 1; w >= 0; w--) {
-    const weekStart = new Date(now);
-    weekStart.setDate(weekStart.getDate() - (w * 7));
-    const day = weekStart.getDay();
+    const ws = new Date(now);
+    ws.setDate(ws.getDate() - (w * 7));
+    const day = ws.getDay();
     const diff = settings.weekStartsMonday ? (day === 0 ? -6 : 1 - day) : -day;
-    weekStart.setDate(weekStart.getDate() + diff);
-
-    const weekEnd = new Date(weekStart);
-    weekEnd.setDate(weekEnd.getDate() + 6);
-
-    const startKey = dateKey(weekStart);
-    const endKey = dateKey(weekEnd);
-
-    const weekEntries = entries.filter(e => e.date >= startKey && e.date <= endKey);
-    const income = weekEntries.filter(e => e.type === 'income').reduce((s, e) => s + (e.amount || 0), 0);
-    const expenses = weekEntries.filter(e => e.type === 'expense').reduce((s, e) => s + (e.amount || 0), 0);
-
-    const label = `${weekStart.getMonth() + 1}/${weekStart.getDate()}`;
-    data.push({ label, income, expenses });
+    ws.setDate(ws.getDate() + diff);
+    const we = new Date(ws);
+    we.setDate(we.getDate() + 6);
+    buckets.push({
+      startKey: dateKey(ws),
+      endKey: dateKey(we),
+      label: (ws.getMonth() + 1) + '/' + ws.getDate(),
+      income: 0,
+      expenses: 0
+    });
   }
-  return data;
+  for (const e of entries) {
+    if (!e.date) continue;
+    for (const b of buckets) {
+      if (e.date >= b.startKey && e.date <= b.endKey) {
+        if (e.type === 'income') b.income += e.amount || 0;
+        else if (e.type === 'expense') b.expenses += e.amount || 0;
+        break;
+      }
+    }
+  }
+  return buckets;
 }
